@@ -1,0 +1,98 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/jpeg" href="/favicon.jpg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="description" content="Enlight Techz LMS Portal - The top-ranking internship platform in Pondicherry and Karaikal. Manage your IT internship courses, projects, and assessments.">
+    <meta name="keywords" content="top ranking internship company at Pondicherry, internship in Karaikal, best IT internship Pondicherry, Enlight Techz LMS, student internship portal, software development internship Karaikal">
+    <meta name="author" content="Enlight Techz">
+    <title>Enlight Techz | Internship LMS Portal</title>
+    <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;700;800&display=swap" rel="stylesheet" />
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet" />
+    <script>
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "primary-container": "#0074db",
+                        "surface-container-highest": "#e0e2ec",
+                        "surface-bright": "#f9f9ff",
+                        "inverse-surface": "#2d3038",
+                        "error-bg": "#fee2e2",
+                        "primary-fixed": "#d5e3ff",
+                        "error-text": "#991b1b",
+                        "outline-variant": "#c0c6d6",
+                        "surface-container-high": "#e5e8f2",
+                        "text-dim": "#334155",
+                        "success": "#04AA6D",
+                        "secondary": "#6e3aca",
+                        "error-container": "#ffdad6",
+                        "secondary-container": "#8856e5",
+                        "primary": "#005baf",
+                        "surface": "#f9f9ff",
+                        "surface-dim": "#d7dae4",
+                        "surface-container-low": "#f1f3fe",
+                        "surface-container-lowest": "#ffffff",
+                        "code-bg": "#282A35",
+                        "surface-container": "#ebedf8",
+                        "surface-variant": "#e0e2ec",
+                        "error": "#ba1a1a",
+                        "warning-text": "#854d0e",
+                        "surface-tint": "#005eb3",
+                        "warning-bg": "#fef08a",
+                        "text-primary": "#020617",
+                        "on-primary": "#ffffff",
+                        "tertiary": "#994200",
+                        "on-surface": "#181c23",
+                        "on-surface-variant": "#404754",
+                        "on-secondary": "#ffffff",
+                        "tertiary-container": "#c05500",
+                        "on-background": "#181c23",
+                        "surface-alt": "#f8fafc",
+                        "outline": "#717785",
+                        "background": "#f9f9ff"
+                    },
+                    "spacing": {
+                        "sidebar-right": "320px",
+                        "gutter": "24px",
+                        "sidebar-left": "250px",
+                        "stack-gap": "1rem",
+                        "container-padding": "40px"
+                    },
+                    "fontFamily": {
+                        "label-md": ["Outfit"],
+                        "headline-md": ["Outfit"],
+                        "headline-lg-mobile": ["Outfit"],
+                        "headline-lg": ["Outfit"],
+                        "headline-xl": ["Outfit"],
+                        "body-md": ["Outfit"],
+                        "body-lg": ["Outfit"],
+                        "code": ["monospace"]
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        .glass-card {
+            background: rgba(248, 250, 252, 0.7);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid rgba(192, 198, 214, 0.3);
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.05);
+        }
+        .progress-ring__circle {
+            transition: stroke-dashoffset 0.35s;
+            transform: rotate(-90deg);
+            transform-origin: 50% 50%;
+        }
+    </style>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.jsx"></script>
+  </body>
+</html>
