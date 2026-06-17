@@ -9,6 +9,10 @@ import ForgotPassword from './components/ForgotPassword';
 import ETLogo from './assets/ET.png';
 import './index.css';
 
+import PrivacyPolicy from './components/PrivacyPolicy';
+import TermsOfService from './components/TermsOfService';
+import Help from './components/Help';
+
 const API_URL = `${import.meta.env.VITE_API_BASE}/api`;
 
 function App() {
@@ -62,18 +66,26 @@ function App() {
 
   return (
     <Router>
-      <div style={{ padding: '0' }}>
+      <div style={{ padding: '0', minHeight: 'calc(100vh - 60px)' }}>
         <Routes>
           <Route path="/" element={token ? <StudentDashboard token={token} student={student} logout={logout} /> : <Navigate to="/login" />} />
           <Route path="/login" element={!token ? <Login setToken={setToken} /> : <Navigate to="/" />} />
           <Route path="/register" element={!token ? <Register setToken={setToken} /> : <Navigate to="/" />} />
           <Route path="/forgot-password" element={!token ? <ForgotPassword /> : <Navigate to="/" />} />
           <Route path="/admin" element={<AdminDashboard />} />
+          <Route path="/privacy-policy" element={<PrivacyPolicy />} />
+          <Route path="/terms-of-service" element={<TermsOfService />} />
+          <Route path="/help" element={<Help />} />
         </Routes>
       </div>
       
       <footer style={{ background: 'var(--bg-card)', padding: '20px 0', textAlign: 'center', borderTop: '1px solid var(--glass-border)' }}>
-        <p style={{ color: 'var(--text-dim)', fontSize: '0.9rem' }}>&copy; 2026 Enlight Techz. All rights reserved.</p>
+        <p style={{ color: 'var(--text-dim)', fontSize: '0.9rem', marginBottom: '8px' }}>&copy; 2026 Enlight Techz. All rights reserved.</p>
+        <div style={{ display: 'flex', justifyContent: 'center', gap: '20px', fontSize: '0.85rem' }}>
+          <Link to="/privacy-policy" style={{ color: 'var(--primary)', textDecoration: 'none' }} className="hover:underline">Privacy Policy</Link>
+          <Link to="/terms-of-service" style={{ color: 'var(--primary)', textDecoration: 'none' }} className="hover:underline">Terms of Service</Link>
+          <Link to="/help" style={{ color: 'var(--primary)', textDecoration: 'none' }} className="hover:underline">Help</Link>
+        </div>
       </footer>
     </Router>
   );
