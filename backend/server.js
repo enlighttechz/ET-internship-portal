@@ -18,6 +18,24 @@ const app = express();
 app.use(cors({origin:['http://intern.enlighttechz.in', 'https://intern.enlighttechz.in', 'https://et-internship-portal.vercel.app']}));
 app.use(express.json());
 
+// Global Logging Middleware
+app.use((req, res, next) => {
+  const start = Date.now();
+  
+  res.on('finish', () => {
+    const duration = Date.now() - start;
+    const logMessage = `[${new Date().toISOString()}] ${req.method} ${req.originalUrl} - Status: ${res.statusCode} - ${duration}ms`;
+    
+    if (res.statusCode >= 400) {
+      console.error(`❌ ERROR: ${logMessage}`);
+    } else {
+      console.log(`✅ SUCCESS: ${logMessage}`);
+    }
+  });
+  
+  next();
+});
+
 // Root route to prevent 404 when testing in browser
 app.get('/', (req, res) => {
   res.send('LMS Backend API is running! Access the frontend at http://localhost:5173');
