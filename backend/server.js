@@ -15,7 +15,7 @@ const Assessment = require('./models/Assessment');
 
 const app = express();
 
-app.use(cors());
+app.use(cors(['*']));
 app.use(express.json());
 
 // Root route to prevent 404 when testing in browser
