@@ -4,7 +4,7 @@ import { Mail, KeyRound, Lock, EyeOff, ArrowLeft } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import ETLogo from '../assets/ET.png';
 
-const API_URL = 'http://localhost:5000/api';
+const API_URL = `${import.meta.env.VITE_API_BASE}/api`;
 
 const ForgotPassword = () => {
   const navigate = useNavigate();

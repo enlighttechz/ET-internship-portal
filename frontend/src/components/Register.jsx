@@ -4,7 +4,7 @@ import { Mail, Lock, User, Monitor, EyeOff, GraduationCap } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import ETLogo from '../assets/ET.png';
 
-const API_URL = 'http://localhost:5000/api';
+const API_URL = `${import.meta.env.VITE_API_BASE}/api`;
 
 const Register = ({ setToken }) => {
   const navigate = useNavigate();

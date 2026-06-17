@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import axios from 'axios';
 import { MessageCircle, X, Send } from 'lucide-react';
 
-const API_URL = 'http://localhost:5000/api';
+const API_URL = `${import.meta.env.VITE_API_BASE}/api`;
 
 const AskDoubtChat = ({ token, currentContent }) => {
   const [isOpen, setIsOpen] = useState(false);

@@ -9,7 +9,7 @@ import ForgotPassword from './components/ForgotPassword';
 import ETLogo from './assets/ET.png';
 import './index.css';
 
-const API_URL = 'http://localhost:5000/api';
+const API_URL = `${import.meta.env.VITE_API_BASE}/api`;
 
 function App() {
   const [token, setToken] = useState(localStorage.getItem('token'));

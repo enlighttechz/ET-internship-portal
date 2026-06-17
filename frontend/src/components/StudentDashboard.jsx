@@ -5,7 +5,7 @@ import AskDoubtChat from './AskDoubtChat';
 import Certificates from './Certificates';
 import ETLogo from '../assets/ET.png';
 
-const API_URL = 'http://localhost:5000/api';
+const API_URL = `${import.meta.env.VITE_API_BASE}/api`;
 
 const StudentDashboard = ({ token, student: initialStudent, logout }) => {
   const [student, setStudent] = useState(initialStudent);

@@ -3,7 +3,7 @@ import axios from 'axios';
 import { Users, Bell, Plus, Trash2, Settings, BookOpen, Award } from 'lucide-react';
 import ETLogo from '../assets/ET.png';
 
-const API_URL = 'http://localhost:5000/api';
+const API_URL = `${import.meta.env.VITE_API_BASE}/api`;
 
 const AdminDashboard = () => {
   const [students, setStudents] = useState([]);
