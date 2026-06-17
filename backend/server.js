@@ -15,7 +15,7 @@ const Assessment = require('./models/Assessment');
 
 const app = express();
 
-app.use(cors({origin:['http://intern.enlighttechz.in','et-internship-portal.vercel.app']}));
+app.use(cors({origin:['http://intern.enlighttechz.in/','et-internship-portal.vercel.app']}));
 app.use(express.json());
 
 // Root route to prevent 404 when testing in browser
