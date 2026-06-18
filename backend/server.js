@@ -202,8 +202,12 @@ app.get('/api/auth/me', protect, async (req, res) => {
 
 app.put('/api/auth/profile', protect, async (req, res) => {
   try {
-    const { name, contact } = req.body;
-    const student = await Student.findByIdAndUpdate(req.student.id, { name, contact }, { new: true }).select('-password');
+    const { name, contact, domain } = req.body;
+    const updateData = {};
+    if (name) updateData.name = name;
+    if (contact) updateData.contact = contact;
+    if (domain) updateData.domain = domain;
+    const student = await Student.findByIdAndUpdate(req.student.id, updateData, { new: true }).select('-password');
     res.json(student);
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -257,8 +261,8 @@ app.get('/api/contents', async (req, res) => {
 
 app.post('/api/contents', async (req, res) => {
   try {
-    const { category, title, type, body, videoUrl, order, domain } = req.body;
-    const newContent = new Content({ category: category || 'General', title, type, body, videoUrl, order, domain: domain || 'All' });
+    const { category, title, type, body, videoUrl, imageUrl, order, domain } = req.body;
+    const newContent = new Content({ category: category || 'General', title, type, body, videoUrl, imageUrl, order, domain: domain || 'All' });
     await newContent.save();
     res.json(newContent);
   } catch (err) {
@@ -394,7 +398,7 @@ app.post('/api/ask-doubt', protect, async (req, res) => {
     }
 
     const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
-    const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
+    const model = genAI.getGenerativeModel({ model: "gemini-flash-latest" });
 
     const prompt = `You are a helpful teaching assistant for the Enlight Techz platform. 
 The student is asking a doubt about the following course content:

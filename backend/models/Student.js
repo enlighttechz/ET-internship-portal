@@ -6,7 +6,7 @@ const studentSchema = new mongoose.Schema({
   password: { type: String, required: true },
   internId: { type: String },
   contact: { type: String, default: '' },
-  domain: { type: String, required: true },
+  domain: { type: String, default: 'Pending' },
   attendance: { type: Number, default: 0 },
   weekendProjectStatus: { type: String, enum: ['Pending', 'Submitted', 'Evaluated'], default: 'Pending' },
   weekendProjectLink: { type: String, default: '' },
@@ -14,6 +14,7 @@ const studentSchema = new mongoose.Schema({
   finalProjectLink: { type: String, default: '' },
   learningProgress: { type: Number, default: 0 }, // Tracks which content index the student is on
   assessmentScore: { type: Number, default: null }, // Null if not taken
+  certificateIssued: { type: Boolean, default: false }, // Admin controls this
   resetOtp: { type: String },
   resetOtpExpires: { type: Date }
 }, { timestamps: true });

@@ -7,6 +7,7 @@ import AdminDashboard from './components/AdminDashboard';
 import Login from './components/Login';
 import Register from './components/Register';
 import ForgotPassword from './components/ForgotPassword';
+import DomainSelection from './components/DomainSelection';
 import ETLogo from './assets/ET.png';
 import './index.css';
 
@@ -69,8 +70,9 @@ function App() {
     <Router>
       <div style={{ padding: '0', minHeight: 'calc(100vh - 60px)' }}>
         <Routes>
-          <Route path="/" element={token ? <Roadmap token={token} student={student} logout={logout} /> : <Navigate to="/login" />} />
-          <Route path="/dashboard" element={token ? <StudentDashboard token={token} student={student} logout={logout} /> : <Navigate to="/login" />} />
+          <Route path="/" element={token ? (student && student.domain === 'Pending' ? <Navigate to="/domain-selection" /> : <Roadmap token={token} student={student} logout={logout} />) : <Navigate to="/login" />} />
+          <Route path="/dashboard" element={token ? (student && student.domain === 'Pending' ? <Navigate to="/domain-selection" /> : <StudentDashboard token={token} student={student} logout={logout} />) : <Navigate to="/login" />} />
+          <Route path="/domain-selection" element={token ? <DomainSelection token={token} student={student} setStudent={setStudent} /> : <Navigate to="/login" />} />
           <Route path="/login" element={!token ? <Login setToken={setToken} /> : <Navigate to="/" />} />
           <Route path="/register" element={!token ? <Register setToken={setToken} /> : <Navigate to="/" />} />
           <Route path="/forgot-password" element={!token ? <ForgotPassword /> : <Navigate to="/" />} />

@@ -11,13 +11,11 @@ const Register = ({ setToken }) => {
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [domain, setDomain] = useState('');
 
   const handleRegister = async (e) => {
     e.preventDefault();
-    if (!domain) return alert('Please select a domain');
     try {
-      const res = await axios.post(`${API_URL}/auth/register`, { name, email, password, domain });
+      const res = await axios.post(`${API_URL}/auth/register`, { name, email, password, domain: 'Pending' });
       localStorage.setItem('token', res.data.token);
       setToken(res.data.token);
     } catch (err) {
@@ -83,30 +81,6 @@ const Register = ({ setToken }) => {
               </div>
             </div>
 
-            {/* Domain Select */}
-            <div className="space-y-1.5">
-              <label className="block font-label-md text-sm font-bold text-text-primary" htmlFor="domain">Internship Domain</label>
-              <div className="relative">
-                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                  <Monitor className="text-outline" size={20} />
-                </div>
-                <select 
-                  className="block w-full pl-10 pr-3 py-3 bg-surface-container-lowest border border-outline-variant rounded-lg text-text-primary font-body-md focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary transition-all duration-200" 
-                  id="domain" 
-                  required 
-                  value={domain}
-                  onChange={(e) => setDomain(e.target.value)}
-                >
-                  <option value="">Select Domain</option>
-                  <option value="Web Development">Web Development</option>
-                  <option value="App Development">App Development</option>
-                  <option value="AI Assisted App development">AI Assisted App development</option>
-                  <option value="Data Science">Data Science</option>
-                  <option value="Cyber Security">Cyber Security</option>
-                  <option value="UI/UX Design">UI/UX Design</option>
-                </select>
-              </div>
-            </div>
 
             {/* Password Input */}
             <div className="space-y-1.5">
