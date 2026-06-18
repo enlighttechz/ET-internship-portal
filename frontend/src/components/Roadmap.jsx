@@ -33,8 +33,8 @@ const Roadmap = ({ token, student, logout }) => {
   const currentContent = contents[currentDayIndex];
   const isAssessmentStage = currentDayIndex >= contents.length && contents.length > 0;
 
-  const currentWeekNum = Math.floor(currentDayIndex / 7) + 1;
-  const currentDayNum = (currentDayIndex % 7) + 1;
+  const currentWeekNum = Math.floor(currentDayIndex / 6) + 1;
+  const currentDayNum = (currentDayIndex % 6) + 1;
   const cleanCurrentTitle = currentContent ? currentContent.title.replace(/^Day\s*\d+[\s:]*/i, '') : '';
 
   return (
@@ -102,8 +102,8 @@ const Roadmap = ({ token, student, logout }) => {
             const isCompleted = idx < student.learningProgress;
             const isCurrent = idx === student.learningProgress;
             
-            const weekNum = Math.floor(idx / 7) + 1;
-            const dayNum = (idx % 7) + 1;
+            const weekNum = Math.floor(idx / 6) + 1;
+            const dayNum = (idx % 6) + 1;
             const cleanTitle = content.title.replace(/^Day\s*\d+[\s:]*/i, '');
 
             return (

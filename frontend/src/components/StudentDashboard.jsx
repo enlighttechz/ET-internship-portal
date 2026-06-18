@@ -518,69 +518,71 @@ const StudentDashboard = ({ token, student: initialStudent, logout }) => {
           <p className="text-center font-body-md text-xs text-text-dim mt-4 relative z-10">Keep up your attendance to unlock projects.</p>
         </div>
 
-        {/* Projects Section */}
-        <div className="glass-card rounded-xl p-5 mb-4 border border-outline-variant/20">
-          <h3 className="font-label-md text-label-md font-bold text-text-primary mb-4 flex items-center gap-2">
-            <Upload size={18} className="text-primary" />
-            Projects
-          </h3>
-          
-          <div className="mb-4">
-            <div className="flex justify-between items-center mb-2">
-              <span className="text-sm font-bold">Mini Project</span>
-              <span className={`text-[10px] uppercase tracking-wider font-bold px-2 py-1 rounded-md ${student.weekendProjectStatus === 'Evaluated' ? 'bg-green-100 text-green-700' : student.weekendProjectStatus === 'Submitted' ? 'bg-yellow-100 text-yellow-700' : 'bg-red-100 text-red-700'}`}>
-                {student.weekendProjectStatus}
-              </span>
-            </div>
-            <div className="flex gap-2">
-              <input 
-                type="text" 
-                placeholder="GitHub/Drive Link..." 
-                value={weekendLink} 
-                onChange={(e) => setWeekendLink(e.target.value)}
-                disabled={student.weekendProjectStatus === 'Evaluated'}
-                className="w-full text-sm p-2 rounded-lg border border-outline-variant bg-surface-container-lowest focus:border-primary focus:ring-1 focus:ring-primary outline-none disabled:opacity-50"
-              />
-              <button 
-                onClick={() => submitProject('weekend')}
-                disabled={student.weekendProjectStatus === 'Evaluated'}
-                className="bg-primary text-white p-2 rounded-lg hover:bg-primary-container disabled:opacity-50 transition-colors shadow-sm"
-              >
-                <Upload size={16} />
-              </button>
-            </div>
-          </div>
-
-          <div className={`pt-4 border-t border-outline-variant/30 ${student.attendance < 80 ? 'opacity-50 grayscale' : ''}`}>
-            <div className="flex justify-between items-center mb-2">
-              <span className="text-sm font-bold flex items-center gap-1"><Award size={14} className="text-secondary"/> Final Project</span>
-              <span className={`text-[10px] uppercase tracking-wider font-bold px-2 py-1 rounded-md ${student.finalProjectStatus === 'Evaluated' ? 'bg-green-100 text-green-700' : student.finalProjectStatus === 'Submitted' ? 'bg-yellow-100 text-yellow-700' : 'bg-red-100 text-red-700'}`}>
-                {student.finalProjectStatus}
-              </span>
-            </div>
-            {student.attendance < 80 ? (
-              <p className="text-xs text-text-dim">80% attendance required to unlock.</p>
-            ) : (
+        {/* Projects Section - Hidden until admin adds project assignment functionality */}
+        {false && (
+          <div className="glass-card rounded-xl p-5 mb-4 border border-outline-variant/20">
+            <h3 className="font-label-md text-label-md font-bold text-text-primary mb-4 flex items-center gap-2">
+              <Upload size={18} className="text-primary" />
+              Projects
+            </h3>
+            
+            <div className="mb-4">
+              <div className="flex justify-between items-center mb-2">
+                <span className="text-sm font-bold">Mini Project</span>
+                <span className={`text-[10px] uppercase tracking-wider font-bold px-2 py-1 rounded-md ${student.weekendProjectStatus === 'Evaluated' ? 'bg-green-100 text-green-700' : student.weekendProjectStatus === 'Submitted' ? 'bg-yellow-100 text-yellow-700' : 'bg-red-100 text-red-700'}`}>
+                  {student.weekendProjectStatus}
+                </span>
+              </div>
               <div className="flex gap-2">
                 <input 
                   type="text" 
-                  placeholder="Deployment Link..." 
-                  value={finalLink} 
-                  onChange={(e) => setFinalLink(e.target.value)}
-                  disabled={student.finalProjectStatus === 'Evaluated'}
+                  placeholder="GitHub/Drive Link..." 
+                  value={weekendLink} 
+                  onChange={(e) => setWeekendLink(e.target.value)}
+                  disabled={student.weekendProjectStatus === 'Evaluated'}
                   className="w-full text-sm p-2 rounded-lg border border-outline-variant bg-surface-container-lowest focus:border-primary focus:ring-1 focus:ring-primary outline-none disabled:opacity-50"
                 />
                 <button 
-                  onClick={() => submitProject('final')}
-                  disabled={student.finalProjectStatus === 'Evaluated'}
-                  className="bg-secondary text-white p-2 rounded-lg hover:bg-secondary-container disabled:opacity-50 transition-colors shadow-sm"
+                  onClick={() => submitProject('weekend')}
+                  disabled={student.weekendProjectStatus === 'Evaluated'}
+                  className="bg-primary text-white p-2 rounded-lg hover:bg-primary-container disabled:opacity-50 transition-colors shadow-sm"
                 >
                   <Upload size={16} />
                 </button>
               </div>
-            )}
+            </div>
+
+            <div className={`pt-4 border-t border-outline-variant/30 ${student.attendance < 80 ? 'opacity-50 grayscale' : ''}`}>
+              <div className="flex justify-between items-center mb-2">
+                <span className="text-sm font-bold flex items-center gap-1"><Award size={14} className="text-secondary"/> Final Project</span>
+                <span className={`text-[10px] uppercase tracking-wider font-bold px-2 py-1 rounded-md ${student.finalProjectStatus === 'Evaluated' ? 'bg-green-100 text-green-700' : student.finalProjectStatus === 'Submitted' ? 'bg-yellow-100 text-yellow-700' : 'bg-red-100 text-red-700'}`}>
+                  {student.finalProjectStatus}
+                </span>
+              </div>
+              {student.attendance < 80 ? (
+                <p className="text-xs text-text-dim">80% attendance required to unlock.</p>
+              ) : (
+                <div className="flex gap-2">
+                  <input 
+                    type="text" 
+                    placeholder="Deployment Link..." 
+                    value={finalLink} 
+                    onChange={(e) => setFinalLink(e.target.value)}
+                    disabled={student.finalProjectStatus === 'Evaluated'}
+                    className="w-full text-sm p-2 rounded-lg border border-outline-variant bg-surface-container-lowest focus:border-primary focus:ring-1 focus:ring-primary outline-none disabled:opacity-50"
+                  />
+                  <button 
+                    onClick={() => submitProject('final')}
+                    disabled={student.finalProjectStatus === 'Evaluated'}
+                    className="bg-secondary text-white p-2 rounded-lg hover:bg-secondary-container disabled:opacity-50 transition-colors shadow-sm"
+                  >
+                    <Upload size={16} />
+                  </button>
+                </div>
+              )}
+            </div>
           </div>
-        </div>
+        )}
 
         {/* Announcements Feed */}
         <div className="flex-grow flex flex-col min-h-0">

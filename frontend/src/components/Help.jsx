@@ -18,14 +18,14 @@ const Help = () => {
             <Mail className="w-8 h-8 text-primary mb-4" />
             <h2 className="text-xl font-bold text-text-high mb-2">Email Support</h2>
             <p className="mb-4">For technical issues or account inquiries, send us an email.</p>
-            <a href="mailto:support@enlighttechz.com" className="text-primary hover:underline">support@enlighttechz.com</a>
+            <a href="mailto:info@enlighttechz.in" className="text-primary hover:underline">info@enlighttechz.in</a>
           </div>
 
           <div className="bg-surface-container border border-glass-border p-6 rounded-xl">
             <Phone className="w-8 h-8 text-primary mb-4" />
             <h2 className="text-xl font-bold text-text-high mb-2">Call Us</h2>
             <p className="mb-4">Available Mon-Fri, 9am - 6pm IST for urgent queries.</p>
-            <p className="text-primary font-medium">+91 98765 43210</p>
+            <p className="text-primary font-medium">+91 88259 18573</p>
           </div>
 
           <div className="bg-surface-container border border-glass-border p-6 rounded-xl md:col-span-2">
