@@ -153,11 +153,11 @@ const Register = ({ setToken }) => {
             © 2026 Enlight Techz LMS. All rights reserved.
           </p>
           <div className="mt-2 flex justify-center space-x-4 font-label-md text-xs text-text-dim">
-            <a className="hover:text-primary transition-colors" href="#">Help</a>
+            <a className="hover:text-primary transition-colors" href="/help">Help</a>
             <span>·</span>
-            <a className="hover:text-primary transition-colors" href="#">Privacy</a>
+            <a className="hover:text-primary transition-colors" href="/privacy-policy">Privacy</a>
             <span>·</span>
-            <a className="hover:text-primary transition-colors" href="#">Terms</a>
+            <a className="hover:text-primary transition-colors" href="/terms-of-service">Terms</a>
           </div>
         </div>
       </main>

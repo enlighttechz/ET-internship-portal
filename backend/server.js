@@ -15,7 +15,7 @@ const Assessment = require('./models/Assessment');
 
 const app = express();
 
-app.use(cors({origin:['http://intern.enlighttechz.in', 'https://intern.enlighttechz.in', 'https://et-internship-portal.vercel.app']}));
+app.use(cors({origin:['http://intern.enlighttechz.in', 'https://intern.enlighttechz.in/', 'https://et-internship-portal.vercel.app/']}));
 app.use(express.json());
 
 // Global Logging Middleware
