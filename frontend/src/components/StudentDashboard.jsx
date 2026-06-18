@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
+import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
-import { Bell, CheckCircle, Clock, Upload, Video, FileText, Award, ChevronLeft, ChevronRight, Menu, X, PlayCircle } from 'lucide-react';
+import { Bell, CheckCircle, Clock, Upload, Video, FileText, Award, ChevronLeft, ChevronRight, Menu, X, PlayCircle, Home } from 'lucide-react';
 import AskDoubtChat from './AskDoubtChat';
 import Certificates from './Certificates';
 import ETLogo from '../assets/ET.png';
@@ -12,6 +13,7 @@ const StudentDashboard = ({ token, student: initialStudent, logout }) => {
   const [notifications, setNotifications] = useState([]);
   const [contents, setContents] = useState([]);
   const [assessment, setAssessment] = useState(null);
+  const navigate = useNavigate();
   
   const [profileForm, setProfileForm] = useState({ name: initialStudent?.name || '', contact: initialStudent?.contact || '' });
   const [isUpdatingProfile, setIsUpdatingProfile] = useState(false);
@@ -194,13 +196,24 @@ const StudentDashboard = ({ token, student: initialStudent, logout }) => {
       <nav className={`fixed md:sticky inset-y-0 left-0 md:top-0 h-full w-[250px] bg-surface-alt/95 md:bg-surface-alt/60 backdrop-blur-xl border-r border-outline-variant/20 shadow-md flex flex-col gap-4 p-4 md:p-6 z-50 md:z-auto transition-transform duration-300 ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'} md:translate-x-0 flex-shrink-0 overflow-y-auto`}>
         {/* Drawer Header (Logo & Close Button) */}
         <div className="flex items-center justify-between px-2 mt-2">
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-3 cursor-pointer hover:opacity-80 transition-opacity" onClick={() => navigate('/')}>
             <img src={ETLogo} alt="Enlight Techz Logo" className="w-8 h-8 md:w-10 md:h-10 object-contain drop-shadow-md" loading="lazy" />
             <span className="font-headline-md text-lg md:text-headline-md text-primary font-bold">Enlight Techz</span>
           </div>
           <button onClick={() => setSidebarOpen(false)} className="md:hidden p-2 -mr-2 text-text-dim hover:text-primary">
             <X size={24} />
           </button>
+        </div>
+
+        {/* Back to Roadmap Link */}
+        <div className="mb-2">
+          <div 
+            onClick={() => { navigate('/'); if (window.innerWidth < 768) setSidebarOpen(false); }}
+            className="flex items-center gap-3 px-4 py-3 rounded-xl border cursor-pointer transition-colors bg-surface-container-lowest/50 border-outline-variant/10 hover:bg-surface-container-low"
+          >
+            <Home size={20} className="text-primary" />
+            <span className="font-label-md text-sm font-bold text-primary">Back to Roadmap</span>
+          </div>
         </div>
 
         {/* Profile Header */}

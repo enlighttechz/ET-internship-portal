@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, Link, Navigate, useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import StudentDashboard from './components/StudentDashboard';
+import Roadmap from './components/Roadmap';
 import AdminDashboard from './components/AdminDashboard';
 import Login from './components/Login';
 import Register from './components/Register';
@@ -68,7 +69,8 @@ function App() {
     <Router>
       <div style={{ padding: '0', minHeight: 'calc(100vh - 60px)' }}>
         <Routes>
-          <Route path="/" element={token ? <StudentDashboard token={token} student={student} logout={logout} /> : <Navigate to="/login" />} />
+          <Route path="/" element={token ? <Roadmap token={token} student={student} logout={logout} /> : <Navigate to="/login" />} />
+          <Route path="/dashboard" element={token ? <StudentDashboard token={token} student={student} logout={logout} /> : <Navigate to="/login" />} />
           <Route path="/login" element={!token ? <Login setToken={setToken} /> : <Navigate to="/" />} />
           <Route path="/register" element={!token ? <Register setToken={setToken} /> : <Navigate to="/" />} />
           <Route path="/forgot-password" element={!token ? <ForgotPassword /> : <Navigate to="/" />} />
