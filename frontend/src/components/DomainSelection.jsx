@@ -1,64 +1,64 @@
 import React, { useState } from 'react';
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
-import { CheckCircle, Monitor, Smartphone, Cpu, Database, Shield, Palette } from 'lucide-react';
+import { CheckCircle, Monitor, Smartphone, Cpu, Server, Bot, Code } from 'lucide-react';
 
 const API_URL = `${import.meta.env.VITE_API_BASE}/api`;
 
-const domainData = [
+export const domainData = [
   {
-    id: 'Web Development',
-    title: 'Web Development',
-    icon: <Monitor size={32} className="text-blue-500 mb-4" />,
-    description: 'Master full-stack web development using React, Node.js, and MongoDB. Build responsive, dynamic web applications.',
+    id: 'AI-Assisted Frontend Development',
+    title: 'AI-Assisted Frontend Development',
+    icon: <Monitor size={32} className="text-teal-500 mb-4" />,
+    description: 'Learn modern frontend development accelerated by AI tools like GitHub Copilot and ChatGPT.',
     fee: '₹2,999',
     duration: '4 Weeks',
-    color: 'border-blue-500'
+    color: 'border-teal-500'
   },
   {
-    id: 'App Development',
-    title: 'App Development',
-    icon: <Smartphone size={32} className="text-green-500 mb-4" />,
-    description: 'Learn cross-platform mobile app development with React Native. Build seamless apps for Android and iOS.',
+    id: 'AI-Assisted Backend Development',
+    title: 'AI-Assisted Backend Development',
+    icon: <Server size={32} className="text-indigo-500 mb-4" />,
+    description: 'Build robust and scalable backend systems using AI to optimize routing, databases, and APIs.',
     fee: '₹2,999',
     duration: '4 Weeks',
-    color: 'border-green-500'
+    color: 'border-indigo-500'
   },
   {
-    id: 'AI Assisted App development',
-    title: 'AI Assisted App development',
-    icon: <Cpu size={32} className="text-purple-500 mb-4" />,
-    description: 'Supercharge your development workflow by integrating AI tools. Build intelligent applications faster.',
+    id: 'AI-Assisted Full Stack Development',
+    title: 'AI-Assisted Full Stack Development',
+    icon: <Code size={32} className="text-fuchsia-500 mb-4" />,
+    description: 'Master complete web application development from UI to database, empowered by AI coding assistants.',
     fee: '₹3,499',
     duration: '4 Weeks',
-    color: 'border-purple-500'
+    color: 'border-fuchsia-500'
   },
   {
-    id: 'Data Science',
-    title: 'Data Science',
-    icon: <Database size={32} className="text-yellow-500 mb-4" />,
-    description: 'Dive into data analysis, machine learning, and visualization using Python and modern data science libraries.',
+    id: 'AI-Assisted Android App Development',
+    title: 'AI-Assisted Android App Development',
+    icon: <Smartphone size={32} className="text-emerald-500 mb-4" />,
+    description: 'Develop high-performance Android applications efficiently using AI-driven development practices.',
+    fee: '₹2,999',
+    duration: '4 Weeks',
+    color: 'border-emerald-500'
+  },
+  {
+    id: 'AI Engineering',
+    title: 'AI Engineering',
+    icon: <Bot size={32} className="text-violet-500 mb-4" />,
+    description: 'Learn to design, build, and deploy machine learning models and AI-powered software systems.',
     fee: '₹3,999',
-    duration: '6 Weeks',
-    color: 'border-yellow-500'
+    duration: '4 Weeks',
+    color: 'border-violet-500'
   },
   {
-    id: 'Cyber Security',
-    title: 'Cyber Security',
-    icon: <Shield size={32} className="text-red-500 mb-4" />,
-    description: 'Learn the fundamentals of ethical hacking, network security, and vulnerability assessment.',
-    fee: '₹3,499',
-    duration: '4 Weeks',
-    color: 'border-red-500'
-  },
-  {
-    id: 'UI/UX Design',
-    title: 'UI/UX Design',
-    icon: <Palette size={32} className="text-pink-500 mb-4" />,
-    description: 'Design beautiful, intuitive user interfaces and master user experience principles using Figma.',
-    fee: '₹2,499',
-    duration: '4 Weeks',
-    color: 'border-pink-500'
+    id: 'Prompt Engineering',
+    title: 'Prompt Engineering',
+    icon: <Cpu size={32} className="text-amber-500 mb-4" />,
+    description: 'Master the art of crafting effective prompts to get the best results from Large Language Models.',
+    fee: '₹1,999',
+    duration: '2 Weeks',
+    color: 'border-amber-500'
   }
 ];
 

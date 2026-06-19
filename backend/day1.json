@@ -1,0 +1,313 @@
+{
+  "course": "AI Engineering",
+  "week": 1,
+  "day": 1,
+  "title": "Introduction to Artificial Intelligence",
+  "duration": "3 Hours",
+  "thumbnail": {
+    "title": "Introduction to AI",
+    "image": "https://images.unsplash.com/photo-1677442136019-21780ecad995"
+  },
+  "learningObjectives": [
+    "Understand the fundamentals of Artificial Intelligence",
+    "Identify real-world AI applications",
+    "Differentiate between Narrow AI, General AI and Super AI",
+    "Understand how AI learns from data",
+    "Analyze the impact of AI on society and industries"
+  ],
+  "sections": [
+    {
+      "id": 1,
+      "title": "What is Artificial Intelligence?",
+      "image": "https://images.unsplash.com/photo-1485827404703-89b55fcc595e",
+      "content": "Artificial Intelligence (AI) is a branch of computer science that enables machines to perform tasks that normally require human intelligence. These tasks include learning, reasoning, problem-solving, understanding language, recognizing images, and making decisions. Unlike traditional software that follows predefined rules, AI systems learn patterns from data and improve their performance over time.",
+      "realWorldExample": {
+        "title": "Image Recognition",
+        "description": "Instead of programming every rule to identify a cat, an AI model learns from thousands of cat images and automatically identifies patterns that distinguish cats from other animals."
+      },
+      "activity": {
+        "title": "Think-Pair-Share",
+        "description": "Identify three applications on your smartphone that use AI and explain how they work."
+      }
+    },
+    {
+      "id": 2,
+      "title": "Why is AI Important?",
+      "image": "https://images.unsplash.com/photo-1516321318423-f06f85e504b3",
+      "content": "AI helps organizations automate repetitive tasks, analyze massive amounts of data, improve decision-making, and create personalized experiences for users. Industries such as healthcare, finance, education, transportation, and entertainment rely heavily on AI to improve efficiency and innovation.",
+      "benefits": [
+        "Automation of repetitive tasks",
+        "Improved decision making",
+        "Increased productivity",
+        "Enhanced customer experiences",
+        "Data-driven insights"
+      ],
+      "example": "Netflix recommends movies based on your viewing history using AI algorithms."
+    },
+    {
+      "id": 3,
+      "title": "Applications of Artificial Intelligence",
+      "image": "https://images.unsplash.com/photo-1535378917042-10a22c95931a",
+      "applications": [
+        {
+          "name": "AI Assistants",
+          "image": "https://images.unsplash.com/photo-1674027444485-cec3da58eef4",
+          "description": "Virtual assistants understand natural language and help users perform tasks.",
+          "examples": [
+            "ChatGPT",
+            "Google Assistant",
+            "Alexa",
+            "Copilot"
+          ]
+        },
+        {
+          "name": "Self-Driving Cars",
+          "image": "https://images.unsplash.com/photo-1503376780353-7e6692767b70",
+          "description": "AI enables vehicles to detect roads, signs, and obstacles to drive safely."
+        },
+        {
+          "name": "Recommendation Systems",
+          "image": "https://images.unsplash.com/photo-1516321497487-e288fb19713f",
+          "description": "AI recommends products, movies, music, and videos based on user preferences.",
+          "examples": [
+            "Netflix",
+            "YouTube",
+            "Amazon",
+            "Spotify"
+          ]
+        },
+        {
+          "name": "Face Recognition",
+          "image": "https://images.unsplash.com/photo-1526378722484-bd91ca387e72",
+          "description": "AI identifies individuals using facial features."
+        },
+        {
+          "name": "Medical Diagnosis",
+          "image": "https://images.unsplash.com/photo-1576091160399-112ba8d25d1d",
+          "description": "AI analyzes medical images and patient records to assist doctors."
+        },
+        {
+          "name": "Fraud Detection",
+          "image": "https://images.unsplash.com/photo-1556740749-887f6717d7e4",
+          "description": "AI detects suspicious financial transactions and prevents fraud."
+        }
+      ]
+    },
+    {
+      "id": 4,
+      "title": "Types of Artificial Intelligence",
+      "image": "https://images.unsplash.com/photo-1620712943543-bcc4688e7485",
+      "types": [
+        {
+          "name": "Narrow AI",
+          "description": "Designed to perform specific tasks and currently the most common form of AI.",
+          "examples": [
+            "ChatGPT",
+            "Face Unlock",
+            "Recommendation Systems"
+          ],
+          "existsToday": true
+        },
+        {
+          "name": "General AI",
+          "description": "AI capable of performing any intellectual task that humans can perform.",
+          "examples": [
+            "Not Yet Developed"
+          ],
+          "existsToday": false
+        },
+        {
+          "name": "Super AI",
+          "description": "AI that surpasses human intelligence in all domains.",
+          "examples": [
+            "Theoretical Concept"
+          ],
+          "existsToday": false
+        }
+      ]
+    }
+  ],
+  "assessment": {
+    "type": "MCQ",
+    "totalQuestions": 15,
+    "marksPerQuestion": 1,
+    "totalMarks": 15,
+    "passingMarks": 9,
+    "questions": [
+      {
+        "id": 1,
+        "question": "What is the primary goal of Artificial Intelligence?",
+        "options": [
+          "Increase internet speed",
+          "Simulate human intelligence",
+          "Store data",
+          "Improve hardware"
+        ],
+        "answer": "Simulate human intelligence"
+      },
+      {
+        "id": 2,
+        "question": "AI is a branch of which field?",
+        "options": [
+          "Mechanical Engineering",
+          "Computer Science",
+          "Civil Engineering",
+          "Electronics"
+        ],
+        "answer": "Computer Science"
+      },
+      {
+        "id": 3,
+        "question": "Which of the following is an example of AI?",
+        "options": [
+          "Calculator",
+          "ChatGPT",
+          "Keyboard",
+          "Printer"
+        ],
+        "answer": "ChatGPT"
+      },
+      {
+        "id": 4,
+        "question": "Which AI application is used by Netflix?",
+        "options": [
+          "Fraud Detection",
+          "Recommendation System",
+          "Face Recognition",
+          "GPS Navigation"
+        ],
+        "answer": "Recommendation System"
+      },
+      {
+        "id": 5,
+        "question": "Face Unlock in smartphones uses:",
+        "options": [
+          "Blockchain",
+          "Face Recognition",
+          "Cloud Storage",
+          "Networking"
+        ],
+        "answer": "Face Recognition"
+      },
+      {
+        "id": 6,
+        "question": "Which industry commonly uses AI for fraud detection?",
+        "options": [
+          "Agriculture",
+          "Banking",
+          "Construction",
+          "Tourism"
+        ],
+        "answer": "Banking"
+      },
+      {
+        "id": 7,
+        "question": "Self-driving cars use AI to:",
+        "options": [
+          "Play music",
+          "Detect roads and obstacles",
+          "Print documents",
+          "Charge batteries"
+        ],
+        "answer": "Detect roads and obstacles"
+      },
+      {
+        "id": 8,
+        "question": "Which of the following is Narrow AI?",
+        "options": [
+          "ChatGPT",
+          "General AI",
+          "Super AI",
+          "Human Brain"
+        ],
+        "answer": "ChatGPT"
+      },
+      {
+        "id": 9,
+        "question": "General AI refers to:",
+        "options": [
+          "Task-specific intelligence",
+          "Human-level intelligence",
+          "Mobile applications",
+          "Computer hardware"
+        ],
+        "answer": "Human-level intelligence"
+      },
+      {
+        "id": 10,
+        "question": "Which type of AI currently exists?",
+        "options": [
+          "Narrow AI",
+          "General AI",
+          "Super AI",
+          "None"
+        ],
+        "answer": "Narrow AI"
+      },
+      {
+        "id": 11,
+        "question": "Which AI application helps doctors analyze medical images?",
+        "options": [
+          "Medical Diagnosis",
+          "Gaming AI",
+          "Recommendation Engine",
+          "Navigation System"
+        ],
+        "answer": "Medical Diagnosis"
+      },
+      {
+        "id": 12,
+        "question": "AI systems learn primarily from:",
+        "options": [
+          "Data",
+          "Paper",
+          "Books",
+          "Hardware"
+        ],
+        "answer": "Data"
+      },
+      {
+        "id": 13,
+        "question": "Which company uses AI recommendations for videos?",
+        "options": [
+          "YouTube",
+          "Paint",
+          "Notepad",
+          "Calculator"
+        ],
+        "answer": "YouTube"
+      },
+      {
+        "id": 14,
+        "question": "Super AI is:",
+        "options": [
+          "Currently available",
+          "Theoretical",
+          "A mobile app",
+          "A database"
+        ],
+        "answer": "Theoretical"
+      },
+      {
+        "id": 15,
+        "question": "AI helps organizations by:",
+        "options": [
+          "Increasing manual work",
+          "Reducing productivity",
+          "Automating tasks",
+          "Removing data"
+        ],
+        "answer": "Automating tasks"
+      }
+    ]
+  },
+  "summary": {
+    "keyTakeaways": [
+      "AI enables machines to mimic human intelligence",
+      "AI learns from data rather than fixed rules",
+      "AI is used in healthcare, finance, transportation, and entertainment",
+      "Most AI today is Narrow AI",
+      "General AI and Super AI are still theoretical concepts"
+    ]
+  }
+}
