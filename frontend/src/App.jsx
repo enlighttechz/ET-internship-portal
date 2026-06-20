@@ -4,13 +4,23 @@ import axios from 'axios';
 import StudentDashboard from './components/StudentDashboard';
 import CourseViewer from './components/CourseViewer';
 import Roadmap from './components/Roadmap';
-import AdminDashboard from './components/AdminDashboard';
 import Login from './components/Login';
 import Register from './components/Register';
 import ForgotPassword from './components/ForgotPassword';
 import DomainSelection from './components/DomainSelection';
+import Onboarding from './components/Onboarding';
+import CompleteProfile from './components/CompleteProfile';
 import ETLogo from './assets/ET.png';
 import './index.css';
+
+import AdminLayout from './components/admin/AdminLayout';
+import AdminCourseManager from './components/admin/AdminCourseManager';
+import AdminStudentManager from './components/admin/AdminStudentManager';
+import AdminAssessmentBuilder from './components/admin/AdminAssessmentBuilder';
+import AdminNotificationManager from './components/admin/AdminNotificationManager';
+import AdminChatPanel from './components/admin/AdminChatPanel';
+import AdminFeedbacks from './components/admin/AdminFeedbacks';
+import AdminSystemSettings from './components/admin/AdminSystemSettings';
 
 import PrivacyPolicy from './components/PrivacyPolicy';
 import TermsOfService from './components/TermsOfService';
@@ -71,14 +81,25 @@ function App() {
     <Router>
       <div style={{ padding: '0', minHeight: 'calc(100vh - 60px)' }}>
         <Routes>
-          <Route path="/" element={token ? (student && student.domain === 'Pending' ? <Navigate to="/domain-selection" /> : <Roadmap token={token} student={student} logout={logout} />) : <Navigate to="/login" />} />
-          <Route path="/dashboard" element={token ? (student && student.domain === 'Pending' ? <Navigate to="/domain-selection" /> : <StudentDashboard token={token} student={student} logout={logout} />) : <Navigate to="/login" />} />
-          <Route path="/course" element={token ? (student && student.domain === 'Pending' ? <Navigate to="/domain-selection" /> : <CourseViewer token={token} student={student} logout={logout} />) : <Navigate to="/login" />} />
-          <Route path="/domain-selection" element={token ? <DomainSelection token={token} student={student} setStudent={setStudent} /> : <Navigate to="/login" />} />
+          <Route path="/" element={token ? (student && !student.hasCompletedProfile ? <Navigate to="/complete-profile" /> : student && student.domain === 'Pending' ? <Navigate to="/domain-selection" /> : student && !student.hasCompletedOnboarding ? <Navigate to="/onboarding" /> : <Roadmap token={token} student={student} logout={logout} />) : <Navigate to="/login" />} />
+          <Route path="/dashboard" element={token ? (student && !student.hasCompletedProfile ? <Navigate to="/complete-profile" /> : student && student.domain === 'Pending' ? <Navigate to="/domain-selection" /> : student && !student.hasCompletedOnboarding ? <Navigate to="/onboarding" /> : <StudentDashboard token={token} student={student} setStudent={setStudent} logout={logout} />) : <Navigate to="/login" />} />
+          <Route path="/course" element={token ? (student && !student.hasCompletedProfile ? <Navigate to="/complete-profile" /> : student && student.domain === 'Pending' ? <Navigate to="/domain-selection" /> : student && !student.hasCompletedOnboarding ? <Navigate to="/onboarding" /> : <CourseViewer token={token} student={student} logout={logout} />) : <Navigate to="/login" />} />
+          <Route path="/domain-selection" element={token ? (student && !student.hasCompletedProfile ? <Navigate to="/complete-profile" /> : <DomainSelection token={token} student={student} setStudent={setStudent} />) : <Navigate to="/login" />} />
+          <Route path="/onboarding" element={token ? (student && !student.hasCompletedProfile ? <Navigate to="/complete-profile" /> : <Onboarding student={student} setStudent={setStudent} />) : <Navigate to="/login" />} />
+          <Route path="/complete-profile" element={token ? <CompleteProfile token={token} student={student} setStudent={setStudent} /> : <Navigate to="/login" />} />
           <Route path="/login" element={!token ? <Login setToken={setToken} /> : <Navigate to="/" />} />
           <Route path="/register" element={!token ? <Register setToken={setToken} /> : <Navigate to="/" />} />
           <Route path="/forgot-password" element={!token ? <ForgotPassword /> : <Navigate to="/" />} />
-          <Route path="/admin" element={<AdminDashboard />} />
+          <Route path="/admin" element={token ? (student ? (student.role === 'admin' ? <AdminLayout /> : <AdminLayout />) : <div className="flex items-center justify-center min-h-[calc(100vh-60px)]"><div className="w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin"></div></div>) : <Navigate to="/login" />}>
+            <Route index element={<Navigate to="courses" replace />} />
+            <Route path="courses" element={<AdminCourseManager />} />
+            <Route path="students" element={<AdminStudentManager />} />
+            <Route path="assessments" element={<AdminAssessmentBuilder />} />
+            <Route path="notifications" element={<AdminNotificationManager />} />
+            <Route path="chat" element={<AdminChatPanel />} />
+            <Route path="feedbacks" element={<AdminFeedbacks />} />
+            <Route path="settings" element={<AdminSystemSettings />} />
+          </Route>
           <Route path="/privacy-policy" element={<PrivacyPolicy />} />
           <Route path="/terms-of-service" element={<TermsOfService />} />
           <Route path="/help" element={<Help />} />

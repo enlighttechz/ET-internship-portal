@@ -7,13 +7,13 @@ import ETLogo from '../assets/ET.png';
 const API_URL = `${import.meta.env.VITE_API_BASE}/api`;
 
 const Roadmap = ({ token, student, logout }) => {
-  const [contents, setContents] = useState([]);
+  const [courseDays, setCourseDays] = useState([]);
   const navigate = useNavigate();
 
   useEffect(() => {
     if (student) {
-      axios.get(`${API_URL}/contents?domain=${student.domain}`)
-        .then(res => setContents(res.data))
+      axios.get(`${API_URL}/course-days/${student.domain}`)
+        .then(res => setCourseDays(res.data.filter(d => !d.hidden).sort((a,b) => a.dayNumber - b.dayNumber)))
         .catch(err => console.error(err));
     }
   }, [student]);
@@ -29,13 +29,13 @@ const Roadmap = ({ token, student, logout }) => {
     );
   }
 
-  const currentDayIndex = student.learningProgress || 0;
-  const currentContent = contents[currentDayIndex];
-  const isAssessmentStage = currentDayIndex >= contents.length && contents.length > 0;
+  const learningProgress = student.learningProgress || 1;
+  const currentDay = courseDays.find(d => d.dayNumber === learningProgress);
+  const isAssessmentStage = courseDays.length > 0 && learningProgress > Math.max(...courseDays.map(d => d.dayNumber));
 
-  const currentWeekNum = Math.floor(currentDayIndex / 6) + 1;
-  const currentDayNum = (currentDayIndex % 6) + 1;
-  const cleanCurrentTitle = currentContent ? currentContent.title.replace(/^Day\s*\d+[\s:]*/i, '') : '';
+  const currentWeekNum = Math.floor((learningProgress - 1) / 6) + 1;
+  const currentDayNum = ((learningProgress - 1) % 6) + 1;
+  const cleanCurrentTitle = currentDay ? currentDay.title.replace(/^Day\s*\d+[\s:]*/i, '') : '';
 
   return (
     <div className="bg-background text-on-surface font-body-md min-h-screen flex flex-col">
@@ -69,16 +69,16 @@ const Roadmap = ({ token, student, logout }) => {
                 Today's Course Target
               </div>
               <h2 className="text-3xl md:text-4xl font-headline-lg font-bold text-on-surface mb-4 leading-tight">
-                {isAssessmentStage ? "Final Assessment Ready" : currentContent ? `${currentWeekNum}.${currentDayNum} ${cleanCurrentTitle}` : "Awaiting Course Modules"}
+                {isAssessmentStage ? "Final Assessment Ready" : currentDay ? `${currentWeekNum}.${currentDayNum} ${cleanCurrentTitle}` : "Awaiting Course Modules"}
               </h2>
               <p className="text-text-dim mb-8 max-w-xl mx-auto md:mx-0 text-lg">
-                {isAssessmentStage ? "You've completed all modules! It's time to take your final assessment to earn your certificate." : currentContent ? "Dive into today's module to keep your progress on track. Your attendance is recorded automatically as you complete modules." : "The curriculum for your domain is currently being updated. Please check back later."}
+                {isAssessmentStage ? "You've completed all modules! It's time to take your final assessment to earn your certificate." : currentDay ? "Dive into today's module to keep your progress on track. Your attendance is recorded automatically as you complete modules." : "The curriculum for your domain is currently being updated. Please check back later."}
               </p>
               <button
-                onClick={() => navigate('/dashboard')}
+                onClick={() => navigate('/course', { state: { activeDomain: student.domain } })}
                 className="inline-flex items-center justify-center gap-2 px-8 py-3.5 rounded-full bg-primary text-white font-bold hover:bg-primary-container hover:scale-105 transition-all shadow-lg text-lg"
               >
-                {isAssessmentStage ? "Take Assessment" : "Start Learning"} <ArrowRight size={20} />
+                {isAssessmentStage ? "Take Assessment" : (!student.learningProgress || student.learningProgress === 0 ? "Start Learning" : "Continue Learning")} <ArrowRight size={20} />
               </button>
             </div>
 
@@ -98,16 +98,16 @@ const Roadmap = ({ token, student, logout }) => {
 
         <h3 className="text-2xl font-headline-md font-bold mb-8 text-center md:text-left">Course Timeline</h3>
         <div className="relative border-l-2 border-outline-variant ml-6 md:ml-10 pl-10 space-y-10 max-w-4xl mx-auto md:mx-0">
-          {contents.map((content, idx) => {
-            const isCompleted = idx < student.learningProgress;
-            const isCurrent = idx === student.learningProgress;
+          {courseDays.map((day) => {
+            const isCompleted = day.dayNumber < learningProgress;
+            const isCurrent = day.dayNumber === learningProgress;
             
-            const weekNum = Math.floor(idx / 6) + 1;
-            const dayNum = (idx % 6) + 1;
-            const cleanTitle = content.title.replace(/^Day\s*\d+[\s:]*/i, '');
+            const weekNum = Math.floor((day.dayNumber - 1) / 6) + 1;
+            const dayNum = ((day.dayNumber - 1) % 6) + 1;
+            const cleanTitle = day.title.replace(/^Day\s*\d+[\s:]*/i, '');
 
             return (
-              <div key={content._id} className="relative group">
+              <div key={day._id} className="relative group">
                 <div className={`absolute -left-[57px] w-10 h-10 rounded-full flex items-center justify-center border-4 border-background transition-colors ${isCompleted ? 'bg-success' : isCurrent ? 'bg-primary scale-110 shadow-md' : 'bg-surface-container-highest'}`}>
                   {isCompleted ? <CheckCircle size={20} className="text-white" /> : isCurrent ? <PlayCircle size={20} className="text-white" /> : <Lock size={16} className="text-text-dim" />}
                 </div>
@@ -134,7 +134,7 @@ const Roadmap = ({ token, student, logout }) => {
             );
           })}
 
-          {contents.length > 0 && (
+          {courseDays.length > 0 && (
             <div className="relative">
               <div className={`absolute -left-[57px] w-10 h-10 rounded-full flex items-center justify-center border-4 border-background ${student.assessmentScore !== null ? 'bg-success' : isAssessmentStage ? 'bg-accent scale-110 shadow-md' : 'bg-surface-container-highest'}`}>
                 {student.assessmentScore !== null ? <CheckCircle size={20} className="text-white" /> : isAssessmentStage ? <PlayCircle size={20} className="text-white" /> : <Lock size={16} className="text-text-dim" />}

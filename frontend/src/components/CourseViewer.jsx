@@ -1,616 +1,465 @@
-import React, { useState, useEffect, useCallback } from 'react';
-import { useNavigate } from 'react-router-dom';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
+import { useNavigate, useLocation } from 'react-router-dom';
 import axios from 'axios';
-import { Bell, CheckCircle, Clock, Upload, Video, FileText, Award, ChevronLeft, ChevronRight, Menu, X, PlayCircle, Home } from 'lucide-react';
+import { Bell, CheckCircle, Clock, Video, FileText, Award, ChevronLeft, ChevronRight, Menu, X, PlayCircle, Home, Inbox, MessageSquare, Send, Lock } from 'lucide-react';
 import AskDoubtChat from './AskDoubtChat';
-import Certificates from './Certificates';
+import Assessment from './Assessment';
 import ETLogo from '../assets/ET.png';
 
 const API_URL = `${import.meta.env.VITE_API_BASE}/api`;
 
 const CourseViewer = ({ token, student: initialStudent, logout }) => {
   const [student, setStudent] = useState(initialStudent);
-  const [notifications, setNotifications] = useState([]);
-  const [contents, setContents] = useState([]);
-  const [assessment, setAssessment] = useState(null);
-  const navigate = useNavigate();
+  const [courseDays, setCourseDays] = useState([]);
+  const [courseDetails, setCourseDetails] = useState(null);
+  const [loading, setLoading] = useState(true);
   
-  const [profileForm, setProfileForm] = useState({ name: initialStudent?.name || '', contact: initialStudent?.contact || '' });
-  const [isUpdatingProfile, setIsUpdatingProfile] = useState(false);
+  const navigate = useNavigate();
+  const location = useLocation();
+  const activeDomain = location.state?.activeDomain || student?.domain;
+  const courseData = activeDomain === student?.domain ? student : student?.additionalCourses?.find(c => c.domain === activeDomain);
 
-  const [weekendLink, setWeekendLink] = useState('');
-  const [finalLink, setFinalLink] = useState('');
-  const [answers, setAnswers] = useState([]); 
+  // Start Date check
+  const parseDateString = (dateStr) => {
+    if (!dateStr) return null;
+    // Check if format is DD/MM/YYYY
+    if (dateStr.includes('/')) {
+      const parts = dateStr.split('/');
+      if (parts.length === 3) {
+        const parsed = new Date(`${parts[2]}-${parts[1]}-${parts[0]}`);
+        if (!isNaN(parsed.getTime())) return parsed;
+      }
+    }
+    const parsed = new Date(dateStr);
+    if (isNaN(parsed.getTime())) return null;
+    return parsed;
+  };
+  const parsedStartDate = parseDateString(courseDetails?.startDate);
+  const hasInternshipStarted = parsedStartDate ? parsedStartDate <= new Date() : true;
 
-  const [activeContentIndex, setActiveContentIndex] = useState(0);
-  const [sidebarOpen, setSidebarOpen] = useState(window.innerWidth > 768); // For mobile
+  // Navigation state
+  const [activeDayIndex, setActiveDayIndex] = useState(0);
+  const [activeItemIndex, setActiveItemIndex] = useState(0);
+  
+  const [sidebarOpen, setSidebarOpen] = useState(window.innerWidth > 768);
+  const [recommendationInboxOpen, setRecommendationInboxOpen] = useState(false);
+  const [recommendations, setRecommendations] = useState([]);
 
   useEffect(() => {
     if (initialStudent) {
       setStudent(initialStudent);
-      setProfileForm({ name: initialStudent.name || '', contact: initialStudent.contact || '' });
-      setWeekendLink(initialStudent.weekendProjectLink || '');
-      setFinalLink(initialStudent.finalProjectLink || '');
-      setActiveContentIndex(initialStudent.learningProgress || 0);
+      const progress = courseData?.learningProgress || 1; // 1-indexed days
+      setActiveDayIndex(Math.max(0, progress - 1));
+      setActiveItemIndex(0); // Start at first item of the day
     }
-  }, [initialStudent]);
+  }, [initialStudent, courseData?.learningProgress]);
 
-  const fetchNotifications = useCallback(async () => {
-    if(!student) return;
-    const res = await axios.get(`${API_URL}/notifications?domain=${student.domain}`);
-    setNotifications(res.data);
-  }, [student]);
-
-  const fetchContents = useCallback(async () => {
+  const fetchData = useCallback(async () => {
     if (!student) return;
-    const res = await axios.get(`${API_URL}/contents?domain=${student.domain}`);
-    setContents(res.data);
-  }, [student]);
-
-  const fetchAssessment = useCallback(async () => {
-    if (!student) return;
+    setLoading(true);
     try {
-      const res = await axios.get(`${API_URL}/assessments/${student.domain}`, { headers: { Authorization: `Bearer ${token}` } });
-      setAssessment(res.data);
-      if(res.data) setAnswers(new Array(res.data.questions.length).fill(null));
+      const [daysRes, recRes, coursesRes] = await Promise.all([
+        axios.get(`${API_URL}/course-days/${activeDomain}`),
+        axios.get(`${API_URL}/recommendations/${student._id}`),
+        axios.get(`${API_URL}/courses`)
+      ]);
+      setCourseDays(daysRes.data.filter(d => !d.hidden).sort((a,b) => a.dayNumber - b.dayNumber));
+      setRecommendations(recRes.data.messages || []);
+      setCourseDetails(coursesRes.data.find(c => c.title === activeDomain));
     } catch (err) {
       console.error(err);
     }
-  }, [student, token]);
+    setLoading(false);
+  }, [student, activeDomain]);
 
-  const handleUpdateProfile = async (e) => {
-    e.preventDefault();
-    setIsUpdatingProfile(true);
-    try {
-      const res = await axios.put(`${API_URL}/auth/profile`, profileForm, { headers: { Authorization: `Bearer ${token}` } });
-      setStudent(res.data);
-      alert('Profile updated successfully!');
-    } catch (err) {
-      console.error(err);
-      alert('Error updating profile');
-    } finally {
-      setIsUpdatingProfile(false);
-    }
-  };
+  // Time tracking state
+  const timeTrackingInterval = useRef(null);
+  const startTime = useRef(Date.now());
+  const lastTrackedItem = useRef({ dayNumber: -1, itemIndex: -1 });
 
   useEffect(() => {
-    if(student) {
-      fetchNotifications();
-      fetchContents();
-      fetchAssessment();
-    }
-  }, [student, fetchNotifications, fetchContents, fetchAssessment]);
+    fetchData();
+  }, [fetchData]);
 
-  const submitProject = async (type) => {
-    if (!student) return;
+  // Handle time tracking
+  useEffect(() => {
+    if (courseDays.length === 0 || !student) return;
+    
+    const currentDay = courseDays[activeDayIndex];
+    if (!currentDay) return;
+
+    // Save previous time if navigating away
+    const saveTime = () => {
+      const timeSpentSecs = Math.floor((Date.now() - startTime.current) / 1000);
+      if (timeSpentSecs > 0 && lastTrackedItem.current.dayNumber !== -1) {
+        axios.put(`${API_URL}/students/${student._id}/track-time`, {
+          domain: activeDomain,
+          dayNumber: lastTrackedItem.current.dayNumber,
+          itemIndex: lastTrackedItem.current.itemIndex,
+          timeSpentSeconds: timeSpentSecs
+        }, { headers: { Authorization: `Bearer ${token}` } }).catch(console.error);
+      }
+    };
+
+    saveTime(); // Save previous item time
+
+    // Reset for new item
+    startTime.current = Date.now();
+    lastTrackedItem.current = { dayNumber: currentDay.dayNumber, itemIndex: activeItemIndex };
+
+    return () => {
+      saveTime();
+      lastTrackedItem.current = { dayNumber: -1, itemIndex: -1 };
+    };
+  }, [activeDayIndex, activeItemIndex, courseDays, student, activeDomain, token]);
+
+  // Reply to admin recommendation
+  const [replyText, setReplyText] = useState('');
+  const messagesEndRef = useRef(null);
+
+  useEffect(() => {
+    if(recommendationInboxOpen) {
+      messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+      // mark read
+      axios.put(`${API_URL}/recommendations/${student._id}/read`, { roleToMarkRead: 'Admin' }).catch(console.error);
+    }
+  }, [recommendationInboxOpen, recommendations]);
+
+  const sendReply = async (e) => {
+    e.preventDefault();
+    if(!replyText.trim()) return;
     try {
-      const updateData = type === 'weekend' 
-        ? { weekendProjectLink: weekendLink, weekendProjectStatus: 'Submitted' }
-        : { finalProjectLink: finalLink, finalProjectStatus: 'Submitted' };
-        
-      const res = await axios.put(`${API_URL}/students/${student._id}`, updateData, {
-        headers: { Authorization: `Bearer ${token}` }
+      const res = await axios.post(`${API_URL}/recommendations/${student._id}`, {
+        text: replyText,
+        senderRole: 'Student'
       });
-      setStudent(res.data);
-      alert('Project submitted successfully!');
-    } catch (err) {
-      console.error(err);
-      alert('Failed to submit project');
+      setRecommendations(res.data.messages);
+      setReplyText('');
+    } catch(err) {
+      alert(err.message);
     }
   };
 
-  const completeCurrentContent = async () => {
-    if (activeContentIndex === student.learningProgress) {
+  const handleNext = async () => {
+    const currentDay = courseDays[activeDayIndex];
+    if (activeItemIndex < currentDay.items.length - 1) {
+      setActiveItemIndex(prev => prev + 1);
+    } else {
+      // Finished day! Update backend learningProgress
+      const nextDayNum = currentDay.dayNumber + 1;
+      
       try {
-        const newProgress = student.learningProgress + 1;
-        const newAttendance = contents.length > 0 
-          ? Math.min(100, Math.round((newProgress / contents.length) * 100))
-          : student.attendance;
-
-        const res = await axios.put(`${API_URL}/students/${student._id}`, {
-          learningProgress: newProgress,
-          attendance: newAttendance
+        const res = await axios.put(`${API_URL}/students/${student._id}/course`, {
+          domain: activeDomain,
+          learningProgress: Math.max(courseData.learningProgress || 0, nextDayNum)
         }, { headers: { Authorization: `Bearer ${token}` } });
         setStudent(res.data);
+        
+        if (activeDayIndex < courseDays.length - 1) {
+          setActiveDayIndex(prev => prev + 1);
+          setActiveItemIndex(0);
+        } else {
+          alert("Congratulations! You have completed all days for this course.");
+          navigate('/dashboard');
+        }
       } catch (err) {
         console.error(err);
       }
     }
-    setActiveContentIndex(prev => prev + 1);
   };
 
-  const submitAssessment = async () => {
-    if (answers.includes(null)) {
-      return alert("Please answer all questions before submitting.");
-    }
-    try {
-      const res = await axios.post(`${API_URL}/assessments/${student.domain}/submit`, {
-        answers
-      }, { headers: { Authorization: `Bearer ${token}` } });
-      setStudent(res.data.student);
-      alert(`Assessment submitted! Your score is ${res.data.score}%`);
-    } catch (err) {
-      console.error(err);
-      alert("Error submitting assessment.");
+  const handlePrev = () => {
+    if (activeItemIndex > 0) {
+      setActiveItemIndex(prev => prev - 1);
+    } else if (activeDayIndex > 0) {
+      setActiveDayIndex(prev => prev - 1);
+      setActiveItemIndex(courseDays[activeDayIndex - 1].items.length - 1);
     }
   };
 
-  const handleAnswerSelect = (qIndex, optIndex) => {
-    const newAnswers = [...answers];
-    newAnswers[qIndex] = optIndex;
-    setAnswers(newAnswers);
-  };
-
-  if (!student) return <div className="p-10 text-center">Loading...</div>;
-
-  const currentContent = contents[activeContentIndex];
-  const isAssessmentStage = activeContentIndex >= contents.length && contents.length > 0;
-  
-  // Calculate attendance circle dash offset
-  const radius = 50;
-  const circumference = 2 * Math.PI * radius;
-  const dashoffset = circumference - (student.attendance / 100) * circumference;
-
-  const groupedContents = contents.reduce((acc, c, idx) => {
-    const cat = c.category || 'General';
-    if (!acc[cat]) acc[cat] = [];
-    acc[cat].push({ ...c, originalIndex: idx });
-    return acc;
-  }, {});
-
-  if (!student) {
-    return (
-      <div className="min-h-screen flex flex-col items-center justify-center bg-gradient-to-br from-surface-container-low to-surface-container-highest">
-        <div className="flex flex-col items-center animate-slide-up">
-          <div className="w-32 h-32 bg-primary/5 rounded-3xl flex items-center justify-center shadow-lg border border-primary/10 mb-6 p-4">
-            <img src={ETLogo} alt="Enlight Techz Logo" className="w-full h-full object-contain animate-pulse" loading="lazy" />
-          </div>
-          <h1 className="font-headline-lg text-4xl font-bold text-primary tracking-tight mb-2">Enlight Techz</h1>
-          <p className="font-label-md text-text-dim uppercase tracking-widest text-sm">Loading Dashboard...</p>
-          
-          <div className="mt-12 flex gap-3">
-            <div className="w-2.5 h-2.5 rounded-full bg-primary animate-bounce" style={{ animationDelay: '0ms' }}></div>
-            <div className="w-2.5 h-2.5 rounded-full bg-primary animate-bounce" style={{ animationDelay: '150ms' }}></div>
-            <div className="w-2.5 h-2.5 rounded-full bg-primary animate-bounce" style={{ animationDelay: '300ms' }}></div>
-          </div>
-        </div>
-      </div>
-    );
+  if (loading) {
+    return <div className="min-h-screen flex items-center justify-center bg-background"><div className="w-12 h-12 border-4 border-primary border-t-transparent rounded-full animate-spin"></div></div>;
   }
 
+  const currentDay = courseDays[activeDayIndex];
+  const currentItem = currentDay?.items[activeItemIndex];
+  
+  // Calculate unread recommendations
+  const unreadCount = recommendations.filter(m => m.senderRole === 'Admin' && !m.isRead).length;
+
   return (
-    <div className="bg-background text-on-surface font-body-md flex flex-col md:flex-row h-screen relative">
+    <div className="bg-background text-on-surface font-body-md flex h-screen overflow-hidden">
       
-      {/* Mobile Top Navigation */}
-      <header className="w-full z-30 bg-surface border-b border-outline-variant/30 shadow-sm md:hidden flex-none sticky top-0">
-        <div className="flex items-center justify-between px-4 h-16 min-w-0">
-          <div className="flex items-center gap-2 cursor-pointer min-w-0 overflow-hidden" onClick={() => setSidebarOpen(!sidebarOpen)}>
-            <Menu className="text-primary shrink-0" size={24} />
-            <span className="font-headline-md text-lg font-bold text-primary truncate">{student?.domain || 'Course Menu'}</span>
+      {/* Left Sidebar */}
+      <nav className={`fixed md:sticky inset-y-0 left-0 w-64 bg-surface/90 backdrop-blur-xl border-r border-outline-variant/30 shadow-2xl flex flex-col z-50 transition-transform duration-300 ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'} md:translate-x-0`}>
+        <div className="p-4 border-b border-outline-variant/30 flex items-center justify-between">
+          <div className="flex items-center gap-2 cursor-pointer" onClick={() => navigate('/')}>
+            <img src={ETLogo} alt="Logo" className="w-8 h-8 drop-shadow-md" />
+            <span className="font-bold text-lg text-primary">Enlight Techz</span>
           </div>
-          <img src={ETLogo} alt="Enlight Techz Logo" className="w-8 h-8 object-contain shrink-0 ml-4 drop-shadow-md" loading="lazy" />
+          <button onClick={() => setSidebarOpen(false)} className="md:hidden"><X size={20}/></button>
         </div>
-      </header>
 
-      {/* Left Navigation Drawer */}
-      <nav className={`fixed md:sticky inset-y-0 left-0 md:top-0 h-full w-[250px] bg-surface-alt/95 md:bg-surface-alt/60 backdrop-blur-xl border-r border-outline-variant/20 shadow-md flex flex-col gap-4 p-4 md:p-6 z-50 md:z-auto transition-transform duration-300 ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'} md:translate-x-0 flex-shrink-0 overflow-y-auto`}>
-        {/* Drawer Header (Logo & Close Button) */}
-        <div className="flex items-center justify-between px-2 mt-2">
-          <div className="flex items-center gap-3 cursor-pointer hover:opacity-80 transition-opacity" onClick={() => navigate('/')}>
-            <img src={ETLogo} alt="Enlight Techz Logo" className="w-8 h-8 md:w-10 md:h-10 object-contain drop-shadow-md" loading="lazy" />
-            <span className="font-headline-md text-lg md:text-headline-md text-primary font-bold">Enlight Techz</span>
-          </div>
-          <button onClick={() => setSidebarOpen(false)} className="md:hidden p-2 -mr-2 text-text-dim hover:text-primary">
-            <X size={24} />
+        <div className="flex-1 overflow-y-auto p-4 space-y-4">
+          <button onClick={() => navigate('/dashboard')} className="w-full flex items-center gap-3 p-3 rounded-xl bg-surface-container hover:bg-primary/10 hover:text-primary transition-colors text-sm font-bold text-text-dim">
+            <Home size={18} /> Dashboard
           </button>
-        </div>
 
-        <div className="mb-2">
-          <div 
-            onClick={() => { navigate('/dashboard'); if (window.innerWidth < 768) setSidebarOpen(false); }}
-            className="flex items-center gap-3 px-4 py-3 rounded-xl border cursor-pointer transition-colors bg-surface-container-lowest/50 border-outline-variant/10 hover:bg-surface-container-low"
-          >
-            <Home size={20} className="text-primary" />
-            <span className="font-label-md text-sm font-bold text-primary">Back to Dashboard</span>
+          <div className="pt-4 border-t border-outline-variant/30">
+            <h4 className="text-xs uppercase tracking-wider font-bold text-text-dim mb-3">Course Roadmap</h4>
+            {courseDays.map((day, idx) => {
+              const isLocked = day.dayNumber > (courseData?.learningProgress || 1);
+              const isCompleted = day.dayNumber < (courseData?.learningProgress || 1);
+              const isActive = activeDayIndex === idx;
+              return (
+                <button 
+                  key={day._id}
+                  onClick={() => {
+                    if (!isLocked && !isCompleted) {
+                      setActiveDayIndex(idx);
+                      setActiveItemIndex(0);
+                      if(window.innerWidth < 768) setSidebarOpen(false);
+                    }
+                  }}
+                  disabled={isLocked || isCompleted}
+                  className={`w-full flex flex-col text-left p-3 rounded-xl mb-2 transition-all ${isActive ? 'bg-primary text-white shadow-lg shadow-primary/20 scale-[1.02]' : isLocked || isCompleted ? 'opacity-50 cursor-not-allowed text-text-dim bg-surface-container-highest/20 pointer-events-none' : 'bg-surface-container hover:bg-surface-container-high text-text-primary'}`}
+                >
+                  <div className="flex items-center gap-2 mb-1">
+                    {isLocked ? <Lock size={14} /> : isCompleted && !isActive ? <CheckCircle size={14} className="text-success" /> : <PlayCircle size={14} />}
+                    <span className="font-bold text-sm">Day {day.dayNumber}</span>
+                  </div>
+                  <span className={`text-xs truncate ${isActive ? 'text-white/80' : 'text-text-dim'}`}>{day.title}</span>
+                </button>
+              );
+            })}
           </div>
         </div>
 
-        {/* Profile Header */}
-        <div 
-          onClick={() => { setActiveContentIndex('profile'); if (window.innerWidth < 768) setSidebarOpen(false); }}
-          className={`flex items-center justify-between gap-2 mb-6 p-4 rounded-xl border cursor-pointer transition-colors ${activeContentIndex === 'profile' ? 'bg-primary/10 border-primary' : 'bg-surface-container-lowest/50 border-outline-variant/10 hover:bg-surface-container-low'}`}
-        >
-          <div className="flex items-center gap-3 overflow-hidden">
-            <div className="w-10 h-10 shrink-0 rounded-full border-2 border-primary bg-primary text-white flex items-center justify-center text-lg font-bold">
-              {student.name ? student.name.charAt(0).toUpperCase() : 'S'}
-            </div>
-            <div className="min-w-0">
-              <h3 className="font-label-md text-sm font-bold text-on-surface truncate">{student.name}</h3>
-              <p className="font-body-md text-[10px] text-text-dim truncate">{student.domain}</p>
-              <p className="font-body-md text-[10px] text-primary font-bold mt-0.5">{student.internId}</p>
-            </div>
-          </div>
-        </div>
-
-        {/* Certificates Link */}
-        <div className="mb-6">
-          <div 
-            onClick={() => { setActiveContentIndex('certificates'); if (window.innerWidth < 768) setSidebarOpen(false); }}
-            className={`flex items-center gap-3 px-4 py-3 rounded-xl border cursor-pointer transition-colors ${activeContentIndex === 'certificates' ? 'bg-primary/10 border-primary' : 'bg-transparent border-transparent hover:bg-surface-container-low'}`}
-          >
-            <Award size={20} className={activeContentIndex === 'certificates' ? 'text-primary' : 'text-text-dim'} />
-            <span className={`font-label-md text-sm ${activeContentIndex === 'certificates' ? 'font-bold text-primary' : 'font-medium text-text-primary'}`}>My Certificates</span>
-          </div>
-        </div>
-
-        {/* Dynamic Module Links */}
-        <div className="flex flex-col gap-2 flex-grow overflow-y-auto">
-          <h4 className="text-xs uppercase text-text-dim font-bold mb-2 tracking-wider pl-2">Course Modules</h4>
-          
-          {Object.entries(groupedContents).map(([category, items]) => (
-            <div key={category} className="mb-4">
-              <h5 className="text-xs uppercase text-text-primary font-bold mb-2 tracking-wider pl-2 bg-surface-container py-2 rounded-md">{category}</h5>
-              <div className="flex flex-col gap-1">
-                {items.map((item) => {
-                  const isActive = activeContentIndex === item.originalIndex;
-                  const isCompleted = item.originalIndex < student.learningProgress;
-                  return (
-                    <button 
-                      key={item._id} 
-                      onClick={() => {
-                        if (item.originalIndex <= student.learningProgress) {
-                          setActiveContentIndex(item.originalIndex);
-                          if (window.innerWidth < 768) setSidebarOpen(false);
-                        }
-                        else alert("Please complete the previous modules first!");
-                      }}
-                      className={`flex items-center gap-3 px-4 py-2 rounded-lg font-label-md text-sm transition-all text-left ${isActive ? 'bg-primary/10 text-primary border-r-4 border-primary font-bold' : 'text-on-surface-variant hover:text-primary hover:bg-secondary-fixed/30'}`}
-                    >
-                      {isCompleted ? <CheckCircle size={16} className="text-success min-w-[16px]" /> : <PlayCircle size={16} className="opacity-50 min-w-[16px]" />}
-                      <span className="truncate">{item.title}</span>
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
-          ))}
-
-          {contents.length > 0 && (
-            <button 
-              onClick={() => {
-                if (student.learningProgress >= contents.length) {
-                  setActiveContentIndex(contents.length);
-                  if (window.innerWidth < 768) setSidebarOpen(false);
-                }
-              }}
-              className={`flex items-center gap-3 px-4 py-3 mt-4 rounded-lg font-label-md text-sm transition-all text-left border-t border-outline-variant/20 ${isAssessmentStage ? 'bg-primary/10 text-primary border-r-4 border-primary font-bold' : 'text-on-surface-variant hover:text-primary hover:bg-secondary-fixed/30'}`}
-            >
-              <Award size={16} className={student.assessmentScore !== null ? "text-success min-w-[16px]" : "min-w-[16px]"} />
-              <span className="truncate">Final Assessment</span>
-            </button>
-          )}
-
-          {/* Logout Button */}
-          <button 
-            onClick={logout}
-            className="flex items-center gap-3 px-4 py-3 mt-auto rounded-lg font-label-md text-sm transition-all text-left text-error hover:bg-error/10 border border-error/20"
-          >
-            <span className="truncate font-bold">Log Out</span>
+        <div className="p-4 border-t border-outline-variant/30">
+          <button onClick={() => setRecommendationInboxOpen(true)} className="w-full flex items-center justify-between p-3 rounded-xl bg-accent/10 hover:bg-accent/20 transition-colors text-accent font-bold text-sm mb-3 relative">
+            <div className="flex items-center gap-2"><Inbox size={18} /> Inbox</div>
+            {unreadCount > 0 && <span className="bg-error text-white text-[10px] px-2 py-0.5 rounded-full">{unreadCount} New</span>}
+          </button>
+          <button onClick={logout} className="w-full text-center p-3 text-sm font-bold text-error border border-error/30 rounded-xl hover:bg-error/10">
+            Log Out
           </button>
         </div>
       </nav>
 
-      {/* Main Content Area */}
-      <main className="flex-1 px-4 md:px-8 py-8 min-w-0 bg-background">
+      {/* Main Content */}
+      <main className="flex-1 flex flex-col h-full relative overflow-hidden bg-surface-container-lowest">
         
-        {/* Hero Welcome Section */}
-        <section className="mb-10">
-          <div className="glass-card rounded-2xl p-8 relative overflow-hidden bg-gradient-to-br from-surface-container-lowest to-surface-container-low border border-outline-variant/20">
-            <div className="absolute -right-20 -top-20 w-64 h-64 bg-primary/10 rounded-full blur-3xl"></div>
-            <div className="absolute -left-10 -bottom-10 w-48 h-48 bg-secondary/10 rounded-full blur-2xl"></div>
-            <div className="relative z-10">
-              <h1 className="font-headline-xl text-headline-xl text-text-primary mb-2">Hello, {student.name.split(' ')[0]}!</h1>
-              <p className="font-body-lg text-body-lg text-text-dim max-w-2xl">Welcome back to your {student.domain} journey. You're making great progress. Let's keep the momentum going.</p>
-            </div>
-          </div>
-        </section>
+        {/* Desktop Header */}
+        <header className="hidden md:flex items-center justify-between p-5 bg-surface border-b border-outline-variant/30 z-40 shrink-0">
+          <h1 className="font-headline-md text-2xl font-bold text-primary">{activeDomain}</h1>
+          {courseDetails?.startDate && (
+             <div className="flex items-center gap-2 text-sm font-bold text-text-dim bg-surface-container px-4 py-2 rounded-xl">
+               <Clock size={16} /> Internship Starts: {courseDetails.startDate}
+             </div>
+          )}
+        </header>
 
-        {/* Content Viewer Layout */}
-        <div className="grid grid-cols-1 lg:grid-cols-1 gap-6 mb-10">
-          
-          <div className="glass-card rounded-2xl p-6 md:p-10 flex flex-col justify-between hover:shadow-lg transition-shadow duration-300 w-full relative overflow-hidden">
-            
-            {activeContentIndex === 'profile' ? (
-              <div className="flex flex-col gap-6 animate-fade-in">
-                <div>
-                  <div className="inline-block px-3 py-1 bg-primary/10 text-primary rounded-full text-xs font-bold tracking-wider mb-4">
-                    MY PROFILE
-                  </div>
-                  <h2 className="font-headline-lg text-headline-lg font-bold text-on-surface mb-2">Edit Profile Settings</h2>
-                  <p className="font-body-md text-text-dim mb-6">Update your personal information. Your email address cannot be changed.</p>
+        {/* Mobile Header */}
+        <header className="md:hidden flex items-center justify-between p-4 bg-surface border-b border-outline-variant/30 z-40 shrink-0">
+          <div className="flex items-center gap-3 overflow-hidden">
+            <button onClick={() => setSidebarOpen(true)} className="shrink-0"><Menu size={24} className="text-primary" /></button>
+            <h1 className="font-bold text-primary truncate flex-1">{activeDomain}</h1>
+          </div>
+          {courseDetails?.startDate && (
+             <div className="text-[10px] font-bold text-text-dim bg-surface-container px-2 py-1 rounded whitespace-nowrap shrink-0 ml-2">
+               Starts: {courseDetails.startDate}
+             </div>
+          )}
+        </header>
+
+        {!hasInternshipStarted ? (
+          <div className="flex-1 flex flex-col overflow-y-auto p-4 md:p-8 custom-scrollbar">
+             <div className="max-w-3xl mx-auto w-full my-auto glass-card bg-white p-10 md:p-16 rounded-3xl shadow-xl border border-outline-variant/30 text-center relative overflow-hidden animate-fade-in">
+                <div className="absolute top-0 right-0 w-64 h-64 bg-primary/5 rounded-full blur-3xl -z-10 pointer-events-none"></div>
+                <div className="absolute bottom-0 left-0 w-64 h-64 bg-accent/5 rounded-full blur-3xl -z-10 pointer-events-none"></div>
+                <div className="w-24 h-24 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-6 text-primary">
+                  <Clock size={48} />
                 </div>
+                <h3 className="text-3xl md:text-4xl font-headline-md font-bold text-text-primary mb-6">Internship Commencing Soon</h3>
+                <p className="text-text-dim text-lg md:text-xl max-w-lg mx-auto leading-relaxed">
+                  This internship will be starting from 
+                  <span className="font-extrabold text-primary text-2xl block mt-4 bg-primary/5 py-3 px-6 rounded-2xl border border-primary/20 inline-block">{courseDetails?.startDate}</span>
+                </p>
+                <button onClick={() => navigate('/dashboard')} className="mt-10 px-8 py-3 bg-surface-container hover:bg-outline-variant/50 text-text-primary font-bold rounded-xl transition-colors shadow-sm">
+                  Return to Dashboard
+                </button>
+             </div>
+          </div>
+        ) : currentDay ? (
+          <div className="flex-1 flex flex-col overflow-hidden">
+            {/* Horizontal Day Tracker */}
+            <div className="bg-surface shadow-sm border-b border-outline-variant/30 px-4 md:px-8 py-4 z-10 flex-none">
+              <h2 className="font-bold text-xl md:text-2xl mb-4 text-on-surface flex items-center gap-3">
+                <span className="bg-primary text-white text-sm px-3 py-1 rounded-full">Day {currentDay.dayNumber}</span>
+                {currentDay.title}
+              </h2>
+              
+              {/* Progress Nodes */}
+              <div className="flex items-center w-full relative">
+                <div className="absolute left-0 right-0 top-1/2 h-0.5 bg-outline-variant/50 -translate-y-1/2 z-0"></div>
+                <div className="absolute left-0 top-1/2 h-0.5 bg-primary -translate-y-1/2 z-0 transition-all duration-500" style={{ width: `${(activeItemIndex / (Math.max(1, currentDay.items.length - 1))) * 100}%` }}></div>
                 
-                <form onSubmit={handleUpdateProfile} className="space-y-4 max-w-lg">
-                  <div>
-                    <label className="block text-sm font-bold text-text-primary mb-1">Full Name</label>
-                    <input 
-                      type="text" 
-                      value={profileForm.name} 
-                      onChange={e => setProfileForm({...profileForm, name: e.target.value})}
-                      className="w-full px-4 py-2 rounded-lg border border-outline-variant bg-surface-container-lowest focus:ring-2 focus:ring-primary focus:outline-none"
-                      required
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-bold text-text-primary mb-1">Intern ID</label>
-                    <input 
-                      type="text" 
-                      value={student.internId || 'Pending'} 
-                      className="w-full px-4 py-2 mb-4 rounded-lg border border-outline-variant/50 bg-surface-container/50 text-text-dim cursor-not-allowed font-code font-bold tracking-wider"
-                      disabled
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-bold text-text-primary mb-1">Email Address</label>
-                    <input 
-                      type="email" 
-                      value={student.email} 
-                      className="w-full px-4 py-2 rounded-lg border border-outline-variant/50 bg-surface-container/50 text-text-dim cursor-not-allowed"
-                      disabled
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-bold text-text-primary mb-1">Contact Details (Phone / Address)</label>
-                    <input 
-                      type="text" 
-                      value={profileForm.contact} 
-                      onChange={e => setProfileForm({...profileForm, contact: e.target.value})}
-                      className="w-full px-4 py-2 rounded-lg border border-outline-variant bg-surface-container-lowest focus:ring-2 focus:ring-primary focus:outline-none"
-                      placeholder="e.g. +91 9876543210"
-                    />
-                  </div>
-                  <div className="pt-4">
-                    <button type="submit" disabled={isUpdatingProfile} className="bg-primary text-white px-6 py-2 rounded-lg font-bold hover:bg-primary-container transition-colors disabled:opacity-50">
-                      {isUpdatingProfile ? 'Saving...' : 'Save Changes'}
-                    </button>
-                  </div>
-                </form>
-              </div>
-            ) : activeContentIndex === 'certificates' ? (
-              <div className="py-2">
-                <Certificates />
-              </div>
-            ) : contents.length === 0 ? (
-              <div className="text-center py-20">
-                <h2 className="text-2xl font-bold mb-4">No content yet!</h2>
-                <p className="text-text-dim">Check back later once admins add modules to your domain.</p>
-              </div>
-            ) : !isAssessmentStage && currentContent ? (
-              <div>
-                <div className="flex justify-between items-start mb-6">
-                  <div className="bg-primary/10 text-primary px-3 py-1 rounded-full font-label-md text-xs uppercase tracking-wider">Module {activeContentIndex + 1} of {contents.length}</div>
-                </div>
-                
-                <h2 className="font-headline-lg text-headline-lg text-text-primary mb-6">{currentContent.title}</h2>
-                
-                {currentContent.type === 'video' ? (
-                  <div className="mb-8 p-6 bg-surface-container-lowest border border-outline-variant/30 rounded-xl">
-                    <div className="flex items-center gap-3 mb-4">
-                      <Video size={24} className="text-primary" />
-                      <h3 className="font-bold text-lg">Video Lesson</h3>
-                    </div>
-                    <a href={currentContent.videoUrl} target="_blank" rel="noreferrer" className="bg-primary text-white font-label-md px-6 py-3 rounded-full hover:scale-105 transition-transform duration-200 shadow-md inline-flex items-center gap-2">
-                      <PlayCircle size={18} /> Watch on Platform
-                    </a>
-                  </div>
-                ) : (
-                  <div className="prose max-w-none text-text-primary font-body-md text-lg leading-relaxed mb-8">
-                    {currentContent.body.split('\n').map((paragraph, idx) => (
-                      <p key={idx} className="mb-4">{paragraph}</p>
-                    ))}
-                  </div>
-                )}
-                
-                <div className="mt-10 pt-6 border-t border-outline-variant/20 flex flex-wrap gap-4 items-center justify-between">
-                  <button 
-                    disabled={activeContentIndex === 0} 
-                    onClick={() => setActiveContentIndex(prev => prev - 1)}
-                    className="flex items-center gap-2 px-5 py-2.5 rounded-full border border-primary text-primary hover:bg-primary/5 disabled:opacity-50 disabled:cursor-not-allowed transition-colors font-bold"
-                  >
-                    <ChevronLeft size={18} /> Previous
-                  </button>
-                  
-                  <button 
-                    onClick={completeCurrentContent}
-                    className="flex items-center gap-2 px-6 py-2.5 rounded-full bg-primary text-white hover:bg-primary-container shadow-md transition-all font-bold hover:scale-105"
-                  >
-                    {activeContentIndex === student.learningProgress ? 'Mark Complete & Next' : 'Next'} <ChevronRight size={18} />
-                  </button>
+                <div className="flex justify-between w-full relative z-10">
+                  {currentDay.items.map((item, idx) => {
+                    const isPassed = activeItemIndex > idx;
+                    const isCurrent = activeItemIndex === idx;
+                    return (
+                      <div 
+                        key={idx} 
+                        onClick={() => setActiveItemIndex(idx)}
+                        className={`w-8 h-8 rounded-full flex items-center justify-center border-2 transition-all cursor-pointer shadow-sm
+                          ${isPassed ? 'bg-primary border-primary text-white' : isCurrent ? 'bg-white border-primary text-primary ring-4 ring-primary/20 scale-110' : 'bg-surface-container border-outline-variant text-text-dim'}
+                        `}
+                        title={item.title}
+                      >
+                        {item.itemType === 'assessment' ? <Award size={14} /> : item.contentType === 'video' ? <Video size={14} /> : <FileText size={14} />}
+                      </div>
+                    );
+                  })}
                 </div>
               </div>
-            ) : isAssessmentStage ? (
-              <div className="py-10">
-                <div className="text-center mb-10">
-                  <Award size={80} className="text-accent mx-auto mb-6 text-secondary" />
-                  <h1 className="font-headline-xl text-4xl font-bold mb-4">Final Assessment</h1>
-                  <p className="text-text-dim text-lg">Test your knowledge on everything you've learned in {student.domain}.</p>
-                </div>
-                
-                {student.assessmentScore === null ? (
-                  <div className="max-w-3xl mx-auto">
-                    {!assessment || assessment.questions.length === 0 ? (
-                      <p className="text-center text-text-dim p-8 bg-surface-container rounded-xl">No assessment questions available yet.</p>
+            </div>
+
+            {/* Content Area */}
+            <div className="flex-1 overflow-y-auto p-4 md:p-8 custom-scrollbar relative">
+              <div className="max-w-4xl mx-auto pb-20">
+                {currentItem ? (
+                  <div className="glass-card bg-white p-6 md:p-10 rounded-3xl shadow-xl border border-outline-variant/30 animate-fade-in relative overflow-hidden">
+                    {/* Decorative blobs */}
+                    <div className="absolute top-0 right-0 w-64 h-64 bg-primary/5 rounded-full blur-3xl -z-10 pointer-events-none"></div>
+                    
+                    <h3 className="text-3xl font-bold text-text-primary mb-8">{currentItem.title}</h3>
+                    
+                    {currentItem.itemType === 'content' ? (
+                      <div className="prose prose-lg max-w-none prose-headings:text-primary prose-a:text-secondary">
+                        {currentItem.contentType === 'video' ? (
+                           <div className="relative w-full aspect-video rounded-2xl overflow-hidden shadow-lg border border-outline-variant/20 mb-8 bg-black">
+                             <iframe src={currentItem.videoUrl} className="w-full h-full" allowFullScreen></iframe>
+                           </div>
+                        ) : currentItem.contentType === 'image' ? (
+                           <img src={currentItem.imageUrl} alt={currentItem.title} className="w-full rounded-2xl shadow-lg border border-outline-variant/20 mb-8" />
+                        ) : (
+                           <div dangerouslySetInnerHTML={{ __html: currentItem.body }} />
+                        )}
+                      </div>
                     ) : (
-                      <>
-                        {assessment.questions.map((q, qIndex) => (
-                          <div key={qIndex} className="mb-8 p-6 bg-surface-container-lowest rounded-xl border border-outline-variant/30 shadow-sm">
-                            <p className="font-bold text-lg mb-4">{qIndex + 1}. {q.questionText}</p>
-                            <div className="flex flex-col gap-3">
-                              {q.options.map((opt, optIndex) => (
-                                <label 
-                                  key={optIndex} 
-                                  className={`flex items-center gap-3 p-4 rounded-lg cursor-pointer border transition-all ${answers[qIndex] === optIndex ? 'bg-primary/10 border-primary text-primary font-bold shadow-sm' : 'bg-surface border-transparent hover:border-outline-variant/50'}`}
-                                >
-                                  <input 
-                                    type="radio" 
-                                    name={`question-${qIndex}`} 
-                                    checked={answers[qIndex] === optIndex} 
-                                    onChange={() => handleAnswerSelect(qIndex, optIndex)} 
-                                    className="w-4 h-4 text-primary bg-background border-outline-variant focus:ring-primary focus:ring-2"
-                                  />
-                                  {opt}
-                                </label>
-                              ))}
-                            </div>
+                      <div className="assessment-container">
+                        <div className="bg-accent/10 border border-accent/20 p-6 rounded-2xl mb-8 flex justify-between items-center">
+                          <div>
+                            <h4 className="font-bold text-accent text-xl flex items-center gap-2 mb-2"><Award /> Interactive Assessment</h4>
+                            <p className="text-text-dim">Test your understanding of today's topics before moving forward.</p>
                           </div>
-                        ))}
-                        <button 
-                          onClick={submitAssessment} 
-                          className="w-full bg-primary text-white font-bold text-lg py-4 rounded-xl shadow-lg hover:bg-primary-container transition-all hover:scale-[1.02]"
-                        >
-                          Submit Assessment
-                        </button>
-                      </>
+                        </div>
+                        {currentItem.formUrl ? (
+                          <div className="w-full relative rounded-2xl overflow-hidden border border-outline-variant/30 mb-8 h-[600px] bg-white">
+                            <iframe src={currentItem.formUrl} width="100%" height="100%" frameBorder="0" marginHeight="0" marginWidth="0">Loading…</iframe>
+                          </div>
+                        ) : (
+                          <div className="p-8 text-center border-2 border-dashed border-outline-variant rounded-2xl mb-8">
+                            <p className="text-text-dim italic">Assessment link is not configured for this module.</p>
+                          </div>
+                        )}
+                        <div className="text-center">
+                          <button onClick={() => handleNext()} className="px-8 py-3 bg-success text-white font-bold rounded-xl shadow-md hover:bg-success/90 transition-colors">
+                            Mark Assessment as Completed
+                          </button>
+                        </div>
+                      </div>
                     )}
                   </div>
                 ) : (
-                  <div className="max-w-md mx-auto bg-green-50 border border-green-200 rounded-2xl p-10 text-center shadow-lg">
-                    <h3 className="text-2xl font-bold text-green-800 mb-2">Assessment Score</h3>
-                    <div className="text-7xl font-extrabold text-green-600 my-6">{student.assessmentScore}%</div>
-                    <p className="text-green-700 font-medium">You have successfully completed this course evaluation!</p>
-                  </div>
+                  <p>No content available.</p>
                 )}
-              </div>
-            ) : null}
-          </div>
-        </div>
-      </main>
-
-      {/* Right Utility Sidebar */}
-      <aside className="hidden lg:flex w-[320px] flex-shrink-0 bg-surface-alt/40 backdrop-blur-lg border-l border-outline-variant/20 shadow-sm flex-col gap-4 p-6 md:sticky md:top-0 h-screen overflow-y-auto">
-        <h2 className="font-headline-md text-headline-md text-secondary mb-2">My Progress</h2>
-        
-        {/* Attendance Progress Ring */}
-        <div className="glass-card rounded-xl p-5 mb-4 border border-outline-variant/20 relative overflow-hidden">
-          <div className="absolute -right-10 -top-10 w-32 h-32 bg-primary/5 rounded-full blur-2xl"></div>
-          <h3 className="font-label-md text-label-md font-bold text-text-primary mb-4 flex items-center gap-2 relative z-10">
-            <Clock size={18} className="text-secondary" />
-            Attendance
-          </h3>
-          <div className="flex justify-center items-center relative z-10">
-            <svg className="w-32 h-32" viewBox="0 0 120 120">
-              <circle cx="60" cy="60" fill="none" r={radius} stroke="#e0e2ec" strokeWidth="8"></circle>
-              <circle 
-                className="progress-ring__circle" 
-                cx="60" cy="60" fill="none" r={radius} 
-                stroke="#005baf" 
-                strokeDasharray={circumference} 
-                strokeDashoffset={dashoffset} 
-                strokeLinecap="round" strokeWidth="8">
-              </circle>
-            </svg>
-            <div className="absolute inset-0 flex flex-col items-center justify-center">
-              <span className="font-headline-lg text-3xl font-bold text-primary">{student.attendance}%</span>
-              <span className="font-label-md text-xs text-text-dim font-bold">Present</span>
-            </div>
-          </div>
-          <p className="text-center font-body-md text-xs text-text-dim mt-4 relative z-10">Keep up your attendance to unlock projects.</p>
-        </div>
-
-        {/* Projects Section - Hidden until admin adds project assignment functionality */}
-        {false && (
-          <div className="glass-card rounded-xl p-5 mb-4 border border-outline-variant/20">
-            <h3 className="font-label-md text-label-md font-bold text-text-primary mb-4 flex items-center gap-2">
-              <Upload size={18} className="text-primary" />
-              Projects
-            </h3>
-            
-            <div className="mb-4">
-              <div className="flex justify-between items-center mb-2">
-                <span className="text-sm font-bold">Mini Project</span>
-                <span className={`text-[10px] uppercase tracking-wider font-bold px-2 py-1 rounded-md ${student.weekendProjectStatus === 'Evaluated' ? 'bg-green-100 text-green-700' : student.weekendProjectStatus === 'Submitted' ? 'bg-yellow-100 text-yellow-700' : 'bg-red-100 text-red-700'}`}>
-                  {student.weekendProjectStatus}
-                </span>
-              </div>
-              <div className="flex gap-2">
-                <input 
-                  type="text" 
-                  placeholder="GitHub/Drive Link..." 
-                  value={weekendLink} 
-                  onChange={(e) => setWeekendLink(e.target.value)}
-                  disabled={student.weekendProjectStatus === 'Evaluated'}
-                  className="w-full text-sm p-2 rounded-lg border border-outline-variant bg-surface-container-lowest focus:border-primary focus:ring-1 focus:ring-primary outline-none disabled:opacity-50"
-                />
-                <button 
-                  onClick={() => submitProject('weekend')}
-                  disabled={student.weekendProjectStatus === 'Evaluated'}
-                  className="bg-primary text-white p-2 rounded-lg hover:bg-primary-container disabled:opacity-50 transition-colors shadow-sm"
-                >
-                  <Upload size={16} />
-                </button>
-              </div>
-            </div>
-
-            <div className={`pt-4 border-t border-outline-variant/30 ${student.attendance < 80 ? 'opacity-50 grayscale' : ''}`}>
-              <div className="flex justify-between items-center mb-2">
-                <span className="text-sm font-bold flex items-center gap-1"><Award size={14} className="text-secondary"/> Final Project</span>
-                <span className={`text-[10px] uppercase tracking-wider font-bold px-2 py-1 rounded-md ${student.finalProjectStatus === 'Evaluated' ? 'bg-green-100 text-green-700' : student.finalProjectStatus === 'Submitted' ? 'bg-yellow-100 text-yellow-700' : 'bg-red-100 text-red-700'}`}>
-                  {student.finalProjectStatus}
-                </span>
-              </div>
-              {student.attendance < 80 ? (
-                <p className="text-xs text-text-dim">80% attendance required to unlock.</p>
-              ) : (
-                <div className="flex gap-2">
-                  <input 
-                    type="text" 
-                    placeholder="Deployment Link..." 
-                    value={finalLink} 
-                    onChange={(e) => setFinalLink(e.target.value)}
-                    disabled={student.finalProjectStatus === 'Evaluated'}
-                    className="w-full text-sm p-2 rounded-lg border border-outline-variant bg-surface-container-lowest focus:border-primary focus:ring-1 focus:ring-primary outline-none disabled:opacity-50"
-                  />
+                
+                {/* Navigation Buttons below content */}
+                <div className="flex justify-between items-center mt-8">
                   <button 
-                    onClick={() => submitProject('final')}
-                    disabled={student.finalProjectStatus === 'Evaluated'}
-                    className="bg-secondary text-white p-2 rounded-lg hover:bg-secondary-container disabled:opacity-50 transition-colors shadow-sm"
+                    onClick={handlePrev}
+                    disabled={activeDayIndex === 0 && activeItemIndex === 0}
+                    className="flex items-center gap-2 px-6 py-3 rounded-full border border-primary text-primary font-bold hover:bg-primary/5 transition-colors disabled:opacity-50"
                   >
-                    <Upload size={16} />
+                    <ChevronLeft size={20} /> Previous
+                  </button>
+                  <button 
+                    onClick={handleNext}
+                    className="flex items-center gap-2 px-8 py-3 rounded-full bg-primary text-white font-bold shadow-lg shadow-primary/30 hover:bg-primary-container hover:scale-105 transition-all"
+                  >
+                    {activeItemIndex === currentDay.items.length - 1 ? 'Finish Day' : 'Next Item'} <ChevronRight size={20} />
                   </button>
                 </div>
-              )}
+              </div>
+            </div>
+            
+            {/* Persistent Chat */}
+            {currentItem && currentItem.itemType === 'content' && (
+              <AskDoubtChat token={token} currentContent={currentItem} />
+            )}
+
+          </div>
+        ) : (
+          <div className="flex-1 flex items-center justify-center p-8">
+            <div className="text-center max-w-md">
+              <div className="w-20 h-20 bg-surface-container-highest rounded-full flex items-center justify-center mx-auto mb-4 text-text-dim">
+                <Lock size={32} />
+              </div>
+              <h3 className="text-2xl font-bold text-text-primary mb-2">No Course Content</h3>
+              <p className="text-text-dim">There is no content available for this domain yet.</p>
             </div>
           </div>
         )}
+      </main>
 
-        {/* Announcements Feed */}
-        <div className="flex-grow flex flex-col min-h-0">
-          <h3 className="font-label-md text-label-md font-bold text-text-primary mb-4 flex items-center gap-2">
-            <Bell size={18} className="text-secondary" />
-            Announcements
-          </h3>
-          <div className="space-y-3 overflow-y-auto pr-2 pb-10">
-            {notifications.length === 0 ? (
-              <p className="text-sm text-text-dim text-center py-4">No new announcements.</p>
-            ) : (
-              notifications.map((notif) => (
-                <div key={notif._id} className="bg-surface-container-lowest rounded-lg p-4 border border-outline-variant/30 hover:border-secondary/50 transition-colors shadow-sm">
-                  <div className="flex items-start justify-between mb-2">
-                    <span className="font-label-md text-xs font-bold text-primary px-2 py-0.5 bg-primary/10 rounded uppercase tracking-wider">{notif.type}</span>
-                    <span className="font-label-md text-[10px] text-text-dim">{new Date(notif.date).toLocaleDateString()}</span>
-                  </div>
-                  <p className="font-body-md text-sm text-text-dim">{notif.message}</p>
-                </div>
-              ))
-            )}
+      {/* Recommendation Inbox Slide-out */}
+      {recommendationInboxOpen && (
+        <div className="fixed inset-0 z-[60] flex justify-end bg-black/40 backdrop-blur-sm animate-fade-in">
+          <div className="w-full max-w-sm bg-surface h-full shadow-2xl flex flex-col animate-slide-up border-l border-outline-variant/30">
+            <div className="p-4 border-b border-outline-variant/30 bg-accent/10 flex items-center justify-between">
+              <h3 className="font-bold text-accent flex items-center gap-2"><Inbox /> Admin Recommendations</h3>
+              <button onClick={() => setRecommendationInboxOpen(false)} className="text-accent/70 hover:text-accent"><X/></button>
+            </div>
+            
+            <div className="flex-1 overflow-y-auto p-4 space-y-4">
+              {recommendations.length === 0 ? (
+                <p className="text-center text-text-dim text-sm mt-10">No messages from the admin yet.</p>
+              ) : (
+                recommendations.map((msg, idx) => {
+                  const isStudent = msg.senderRole === 'Student';
+                  return (
+                    <div key={idx} className={`flex ${isStudent ? 'justify-end' : 'justify-start'}`}>
+                      <div className={`max-w-[85%] p-3 rounded-2xl ${isStudent ? 'bg-surface-container-highest rounded-tr-sm' : 'bg-accent text-white rounded-tl-sm'}`}>
+                        <p className="text-sm whitespace-pre-wrap">{msg.text}</p>
+                        <span className={`text-[9px] block mt-1 ${isStudent ? 'text-text-dim' : 'text-white/70'}`}>
+                          {new Date(msg.timestamp).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
+                        </span>
+                      </div>
+                    </div>
+                  );
+                })
+              )}
+              <div ref={messagesEndRef} />
+            </div>
+
+            <div className="p-4 border-t border-outline-variant/30 bg-surface">
+              <form onSubmit={sendReply} className="flex gap-2">
+                <input 
+                  type="text" value={replyText} onChange={e=>setReplyText(e.target.value)}
+                  placeholder="Reply to admin..."
+                  className="flex-1 bg-surface-container-lowest border border-outline-variant rounded-full px-4 py-2 text-sm focus:border-accent focus:ring-1 focus:ring-accent outline-none"
+                />
+                <button type="submit" disabled={!replyText.trim()} className="bg-accent text-white w-10 h-10 rounded-full flex items-center justify-center disabled:opacity-50 hover:bg-accent/90 transition-colors">
+                  <Send size={16} className="ml-1" />
+                </button>
+              </form>
+            </div>
           </div>
         </div>
-      </aside>
-      
-      {/* Gemini Ask Doubt Chatbot */}
-      {typeof activeContentIndex === 'number' && (
-        <AskDoubtChat token={token} currentContent={currentContent} />
       )}
+
     </div>
   );
 };

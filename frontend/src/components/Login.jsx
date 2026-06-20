@@ -113,7 +113,7 @@ const Login = ({ setToken }) => {
           </div>
         </div>
 
-        {/* Footer / Support links */}
+        {/* Footer / Support links
         <div className="mt-8 text-center">
           <p className="font-label-md text-xs text-text-dim">
             © 2026 Enlight Techz LMS. All rights reserved.
@@ -125,7 +125,7 @@ const Login = ({ setToken }) => {
             <span>·</span>
             <a className="hover:text-primary transition-colors" href="/terms-of-service">Terms</a>
           </div>
-        </div>
+        </div> */}
       </main>
     </div>
   );
