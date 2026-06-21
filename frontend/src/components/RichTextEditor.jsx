@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Bold, Italic, Underline, List, ListOrdered, Link, Image as ImageIcon, Code, AlignLeft, AlignCenter, AlignRight, Heading1, Heading2, Quote, Minus, Type, Eye, Edit3, X } from 'lucide-react';
+import { Bold, Italic, Underline, List, ListOrdered, Link, Image as ImageIcon, Code, AlignLeft, AlignCenter, AlignRight, Heading1, Heading2, Quote, Minus, Type, Eye, Edit3, X, Indent, Outdent } from 'lucide-react';
 import axios from 'axios';
 
 const RichTextEditor = ({ value, onChange, placeholder }) => {
@@ -128,6 +128,16 @@ const RichTextEditor = ({ value, onChange, placeholder }) => {
     handleInput();
   };
 
+  const changeFontSize = (delta) => {
+    editorRef.current?.focus();
+    let currentSize = document.queryCommandValue('fontSize');
+    // If not set, standard default is usually 3
+    if (!currentSize || currentSize === '') currentSize = 3;
+    let newSize = Math.max(1, Math.min(7, parseInt(currentSize) + delta));
+    document.execCommand('fontSize', false, newSize);
+    handleInput();
+  };
+
   const insertLink = () => {
     const url = prompt('Enter URL:');
     if (url) execCmd('createLink', url);
@@ -169,15 +179,15 @@ const RichTextEditor = ({ value, onChange, placeholder }) => {
     execCmd('insertHTML', '<hr style="border:none;border-top:2px solid #e2e8f0;margin:16px 0;" />');
   };
 
-  const ToolBtn = ({ icon: Icon, title, onClick }) => (
+  const ToolBtn = ({ icon: Icon, title, onClick, text }) => (
     <button
       type="button"
       onMouseDown={(e) => e.preventDefault()}
       onClick={onClick}
       title={title}
-      className="p-1.5 rounded-md transition-colors text-text-dim hover:text-text-primary hover:bg-primary/10"
+      className="p-1.5 rounded-md transition-colors text-text-dim hover:text-text-primary hover:bg-primary/10 font-bold"
     >
-      <Icon size={16} />
+      {Icon ? <Icon size={16} /> : text}
     </button>
   );
 
@@ -189,17 +199,23 @@ const RichTextEditor = ({ value, onChange, placeholder }) => {
         <ToolBtn icon={Italic} title="Italic" onClick={() => execCmd('italic')} />
         <ToolBtn icon={Underline} title="Underline" onClick={() => execCmd('underline')} />
         <div className="w-px h-5 bg-outline-variant/50 mx-1" />
-        <ToolBtn icon={Heading1} title="Heading 1" onClick={() => execCmd('formatBlock', 'h1')} />
-        <ToolBtn icon={Heading2} title="Heading 2" onClick={() => execCmd('formatBlock', 'h2')} />
-        <ToolBtn icon={Type} title="Paragraph" onClick={() => execCmd('formatBlock', 'p')} />
+        <ToolBtn icon={Heading1} title="Heading 1" onClick={() => execCmd('formatBlock', '<H1>')} />
+        <ToolBtn icon={Heading2} title="Heading 2" onClick={() => execCmd('formatBlock', '<H2>')} />
+        <ToolBtn icon={Type} title="Paragraph" onClick={() => execCmd('formatBlock', '<p>')} />
+        <div className="w-px h-5 bg-outline-variant/50 mx-1" />
+        <ToolBtn text="A+" title="Increase Text Size" onClick={() => changeFontSize(1)} />
+        <ToolBtn text="A-" title="Decrease Text Size" onClick={() => changeFontSize(-1)} />
         <div className="w-px h-5 bg-outline-variant/50 mx-1" />
         <ToolBtn icon={List} title="Bullet List" onClick={() => execCmd('insertUnorderedList')} />
         <ToolBtn icon={ListOrdered} title="Numbered List" onClick={() => execCmd('insertOrderedList')} />
-        <ToolBtn icon={Quote} title="Blockquote" onClick={() => execCmd('formatBlock', 'blockquote')} />
+        <ToolBtn icon={Quote} title="Blockquote" onClick={() => execCmd('formatBlock', '<BLOCKQUOTE>')} />
         <div className="w-px h-5 bg-outline-variant/50 mx-1" />
         <ToolBtn icon={AlignLeft} title="Align Left" onClick={() => execCmd('justifyLeft')} />
         <ToolBtn icon={AlignCenter} title="Align Center" onClick={() => execCmd('justifyCenter')} />
         <ToolBtn icon={AlignRight} title="Align Right" onClick={() => execCmd('justifyRight')} />
+        <div className="w-px h-5 bg-outline-variant/50 mx-1" />
+        <ToolBtn icon={Outdent} title="Decrease Indent" onClick={() => execCmd('outdent')} />
+        <ToolBtn icon={Indent} title="Increase Indent" onClick={() => execCmd('indent')} />
         <div className="w-px h-5 bg-outline-variant/50 mx-1" />
         <ToolBtn icon={Link} title="Insert Link" onClick={insertLink} />
         
@@ -283,7 +299,7 @@ const RichTextEditor = ({ value, onChange, placeholder }) => {
           contentEditable
           suppressContentEditableWarning
           dir="ltr"
-          className="p-4 min-h-[200px] outline-none text-sm text-text-primary leading-relaxed [&_h1]:text-2xl [&_h1]:font-bold [&_h1]:mb-3 [&_h2]:text-xl [&_h2]:font-bold [&_h2]:mb-2 [&_blockquote]:border-l-4 [&_blockquote]:border-primary/30 [&_blockquote]:pl-4 [&_blockquote]:italic [&_blockquote]:text-text-dim [&_pre]:bg-gray-900 [&_pre]:text-gray-100 [&_pre]:p-3 [&_pre]:rounded-lg [&_pre]:text-xs [&_pre]:overflow-x-auto [&_img]:max-w-full [&_img]:rounded-lg [&_img]:my-2 [&_a]:text-primary [&_a]:underline"
+          className="p-4 min-h-[200px] outline-none text-sm text-text-primary leading-relaxed [&_h1]:text-2xl [&_h1]:font-bold [&_h1]:mb-3 [&_h2]:text-xl [&_h2]:font-bold [&_h2]:mb-2 [&_blockquote]:border-l-4 [&_blockquote]:border-primary/30 [&_blockquote]:pl-4 [&_blockquote]:italic [&_blockquote]:text-text-dim [&_pre]:bg-gray-900 [&_pre]:text-gray-100 [&_pre]:p-3 [&_pre]:rounded-lg [&_pre]:text-xs [&_pre]:overflow-x-auto [&_img]:max-w-full [&_img]:rounded-lg [&_img]:my-2 [&_a]:text-primary [&_a]:underline [&_ul]:list-disc [&_ul]:pl-5 [&_ul]:my-2 [&_ol]:list-decimal [&_ol]:pl-5 [&_ol]:my-2 [&_li]:mb-1 [&_p]:mb-2 [&_p]:min-h-[1em]"
           onInput={handleInput}
           data-placeholder={placeholder || 'Start writing your course content...'}
           style={{ minHeight: '200px', textAlign: 'left', direction: 'ltr', unicodeBidi: 'plaintext' }}

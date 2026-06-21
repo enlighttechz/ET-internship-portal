@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { ChevronDown, ChevronUp, Plus, Trash2, Save, Edit3, Eye, EyeOff, Video, FileText, Image as ImageIcon, Award, GripVertical } from 'lucide-react';
+import { ChevronDown, ChevronUp, Plus, Trash2, Save, Edit3, Eye, EyeOff, Video, FileText, Image as ImageIcon, Award, GripVertical, X } from 'lucide-react';
 import axios from 'axios';
 import RichTextEditor from './RichTextEditor';
 
@@ -121,6 +121,10 @@ const DayEditor = ({ day, onRefresh }) => {
   const [isAddingItem, setIsAddingItem] = useState(false);
   const [newItemType, setNewItemType] = useState('content');
   const [newItemContentForm, setNewItemContentForm] = useState({ title: '', contentType: 'text', body: '', videoUrl: '', imageUrl: '' });
+  const [editingItemIdx, setEditingItemIdx] = useState(null);
+  
+  const [isEditingDay, setIsEditingDay] = useState(false);
+  const [editDayForm, setEditDayForm] = useState({ dayNumber: day.dayNumber, title: day.title, description: day.description || '' });
   
   // Drag and drop state
   const dragItem = useRef();
@@ -161,6 +165,21 @@ const DayEditor = ({ day, onRefresh }) => {
     } catch (err) {
       alert("Failed to delete: " + err.message);
     }
+  };
+
+  const startEditItem = (idx) => {
+    const item = items[idx];
+    setEditingItemIdx(idx);
+    setNewItemType(item.itemType || 'content');
+    setNewItemContentForm({
+      title: item.title || '',
+      contentType: item.contentType || 'text',
+      body: item.body || '',
+      videoUrl: item.videoUrl || '',
+      imageUrl: item.imageUrl || '',
+      formUrl: item.formUrl || ''
+    });
+    setIsAddingItem(true);
   };
 
   const handleCSVUpload = async (e, idx) => {
@@ -244,9 +263,17 @@ const DayEditor = ({ day, onRefresh }) => {
       newItem.formUrl = newItemContentForm.formUrl; // Google Form Embed URL
     }
 
-    const newItems = [...items, newItem];
+    let newItems;
+    if (editingItemIdx !== null) {
+      newItems = [...items];
+      newItems[editingItemIdx] = { ...newItems[editingItemIdx], ...newItem };
+    } else {
+      newItems = [...items, newItem];
+    }
+
     setItems(newItems);
     setIsAddingItem(false);
+    setEditingItemIdx(null);
     try {
       await axios.put(`${API_URL}/course-days/${day._id}`, { items: newItems });
       setNewItemContentForm({ title: '', contentType: 'text', body: '', videoUrl: '', imageUrl: '' });
@@ -264,28 +291,69 @@ const DayEditor = ({ day, onRefresh }) => {
     }
   };
 
+  const handleEditDay = async (e) => {
+    e.preventDefault();
+    try {
+      await axios.put(`${API_URL}/course-days/${day._id}`, editDayForm);
+      setIsEditingDay(false);
+      onRefresh();
+    } catch (err) {
+      alert("Failed to update day: " + err.message);
+    }
+  };
+
+  const handleDeleteDay = async () => {
+    if(!window.confirm(`Are you sure you want to delete Day ${day.dayNumber}: ${day.title}? This will also delete all items inside it.`)) return;
+    try {
+      await axios.delete(`${API_URL}/course-days/${day._id}`);
+      onRefresh();
+    } catch (err) {
+      alert("Failed to delete day: " + err.message);
+    }
+  };
+
   return (
     <div className={`bg-surface border border-outline-variant/30 rounded-xl overflow-hidden shadow-sm transition-opacity ${day.hidden ? 'opacity-60' : ''}`}>
       <div className="bg-surface-container-highest px-4 py-3 flex justify-between items-center border-b border-outline-variant/30">
-        <div>
-          <h5 className="font-bold text-on-surface flex items-center gap-2">
-            Day {day.dayNumber}: {day.title}
-            {day.hidden && <span className="bg-outline-variant text-text-primary text-[10px] uppercase font-bold px-2 py-0.5 rounded-full">Hidden</span>}
-          </h5>
-          {day.description && <p className="text-xs text-text-dim mt-0.5">{day.description}</p>}
-        </div>
-        <div className="flex items-center gap-2">
-          <button 
-            onClick={toggleVisibility} 
-            className={`p-1.5 rounded-lg transition-colors ${day.hidden ? 'text-primary hover:bg-primary/10' : 'text-text-dim hover:bg-surface-container'}`}
-            title={day.hidden ? "Show Module" : "Hide Module"}
-          >
-            {day.hidden ? <EyeOff size={18} /> : <Eye size={18} />}
-          </button>
-          <button onClick={() => {}} className="text-error/70 hover:text-error p-1 rounded hover:bg-error/10" title="Delete Day (Not implemented in this UI directly but logic exists)">
-             {/* Not exposing day delete here to avoid accidental clicks, put it in day builder */}
-          </button>
-        </div>
+        {isEditingDay ? (
+          <form onSubmit={handleEditDay} className="flex-1 flex gap-2 items-center mr-4">
+            <input type="number" value={editDayForm.dayNumber} onChange={e => setEditDayForm({...editDayForm, dayNumber: Number(e.target.value)})} className="w-16 p-1.5 rounded border border-outline-variant text-sm bg-surface" required min="1" placeholder="Day #" />
+            <input type="text" value={editDayForm.title} onChange={e => setEditDayForm({...editDayForm, title: e.target.value})} className="flex-1 p-1.5 rounded border border-outline-variant text-sm bg-surface" required placeholder="Title" />
+            <input type="text" value={editDayForm.description} onChange={e => setEditDayForm({...editDayForm, description: e.target.value})} className="flex-1 p-1.5 rounded border border-outline-variant text-sm bg-surface" placeholder="Description" />
+            <button type="submit" className="p-1.5 bg-primary text-white rounded hover:bg-primary/90"><Save size={18} /></button>
+            <button type="button" onClick={() => setIsEditingDay(false)} className="p-1.5 bg-surface-container text-text-dim rounded hover:text-text-primary border border-outline-variant"><X size={18} /></button>
+          </form>
+        ) : (
+          <div>
+            <h5 className="font-bold text-on-surface flex items-center gap-2">
+              Day {day.dayNumber}: {day.title}
+              {day.hidden && <span className="bg-outline-variant text-text-primary text-[10px] uppercase font-bold px-2 py-0.5 rounded-full">Hidden</span>}
+            </h5>
+            {day.description && <p className="text-xs text-text-dim mt-0.5">{day.description}</p>}
+          </div>
+        )}
+        
+        {!isEditingDay && (
+          <div className="flex items-center gap-1 shrink-0">
+            <button 
+              onClick={() => setIsEditingDay(true)} 
+              className="p-1.5 rounded-lg text-primary/70 hover:text-primary hover:bg-primary/10 transition-colors"
+              title="Edit Module"
+            >
+              <Edit3 size={18} />
+            </button>
+            <button 
+              onClick={toggleVisibility} 
+              className={`p-1.5 rounded-lg transition-colors ${day.hidden ? 'text-primary hover:bg-primary/10' : 'text-text-dim hover:bg-surface-container'}`}
+              title={day.hidden ? "Show Module" : "Hide Module"}
+            >
+              {day.hidden ? <EyeOff size={18} /> : <Eye size={18} />}
+            </button>
+            <button onClick={handleDeleteDay} className="p-1.5 rounded-lg text-error/70 hover:text-error hover:bg-error/10 transition-colors" title="Delete Module">
+              <Trash2 size={18} />
+            </button>
+          </div>
+        )}
       </div>
       
       <div className="p-4 bg-surface-container-lowest">
@@ -323,6 +391,9 @@ const DayEditor = ({ day, onRefresh }) => {
                   )}
                 </div>
                 <div className="flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                  <button onClick={() => startEditItem(idx)} className="text-primary/70 hover:text-primary p-1.5 bg-primary/5 rounded-md hover:bg-primary/10">
+                    <Edit3 size={14} />
+                  </button>
                   <button onClick={() => deleteItem(idx)} className="text-error/70 hover:text-error p-1.5 bg-error/5 rounded-md hover:bg-error/10">
                     <Trash2 size={14} />
                   </button>
@@ -383,15 +454,20 @@ const DayEditor = ({ day, onRefresh }) => {
             )}
 
             <div className="flex gap-2 mt-4 justify-end">
-              <button type="button" onClick={() => setIsAddingItem(false)} className="px-4 py-2 text-sm font-bold text-text-dim hover:bg-surface-container rounded-md">Cancel</button>
+              <button type="button" onClick={() => { setIsAddingItem(false); setEditingItemIdx(null); }} className="px-4 py-2 text-sm font-bold text-text-dim hover:bg-surface-container rounded-md">Cancel</button>
               <button type="submit" className={`px-4 py-2 text-sm font-bold text-white rounded-md ${newItemType === 'content' ? 'bg-primary hover:bg-primary/90' : 'bg-accent hover:bg-accent/90'}`}>
-                Add {newItemType === 'content' ? 'Content' : 'Assessment'}
+                {editingItemIdx !== null ? 'Save Changes' : `Add ${newItemType === 'content' ? 'Content' : 'Assessment'}`}
               </button>
             </div>
           </form>
         ) : (
           <button 
-            onClick={() => setIsAddingItem(true)}
+            onClick={() => {
+              setEditingItemIdx(null);
+              setNewItemContentForm({ title: '', contentType: 'text', body: '', videoUrl: '', imageUrl: '', formUrl: '' });
+              setNewItemType('content');
+              setIsAddingItem(true);
+            }}
             className="w-full py-2.5 border-2 border-dashed border-outline-variant/50 rounded-lg text-sm font-bold text-text-dim hover:text-primary hover:border-primary/50 hover:bg-primary/5 transition-colors flex items-center justify-center gap-2"
           >
             <Plus size={16} /> Add Item to Day {day.dayNumber}
