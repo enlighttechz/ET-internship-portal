@@ -75,7 +75,7 @@ const CompleteProfile = ({ token, student, setStudent }) => {
 
           <div className="space-y-2">
             <label className="text-sm font-bold text-text-primary flex items-center gap-2"><Phone size={16}/> Contact Number</label>
-            <input type="tel" required className="w-full p-3 rounded-xl border border-outline-variant bg-surface focus:ring-2 focus:ring-primary outline-none" value={formData.contact} onChange={e=>setFormData({...formData, contact: e.target.value})} placeholder="+91 9876543210" />
+            <input type="tel" required pattern="[0-9]{10}" title="Please enter a valid 10-digit mobile number" maxLength="10" className="w-full p-3 rounded-xl border border-outline-variant bg-surface focus:ring-2 focus:ring-primary outline-none" value={formData.contact} onChange={e=>setFormData({...formData, contact: e.target.value.replace(/\D/g, '')})} placeholder="e.g. 9876543210" />
           </div>
 
           <div className="pt-6">

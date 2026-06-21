@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { ChevronDown, ChevronUp, Plus, Trash2, Save, Edit3, Eye, EyeOff, Video, FileText, Image as ImageIcon, Award, GripVertical } from 'lucide-react';
 import axios from 'axios';
+import RichTextEditor from './RichTextEditor';
 
 const API_URL = `${import.meta.env.VITE_API_BASE}/api`;
 
@@ -355,7 +356,13 @@ const DayEditor = ({ day, onRefresh }) => {
                   </select>
                 </div>
                 {newItemContentForm.contentType === 'text' && (
-                  <textarea placeholder="HTML body..." value={newItemContentForm.body} onChange={e => setNewItemContentForm({...newItemContentForm, body: e.target.value})} className="w-full p-2 rounded-md border text-sm min-h-[100px]" required />
+                  <div className="mt-2 mb-4">
+                    <RichTextEditor 
+                      value={newItemContentForm.body} 
+                      onChange={(html) => setNewItemContentForm({...newItemContentForm, body: html})}
+                      placeholder="Start writing your HTML content..."
+                    />
+                  </div>
                 )}
                 {newItemContentForm.contentType === 'video' && (
                   <input type="text" placeholder="Video Embed URL" value={newItemContentForm.videoUrl} onChange={e => setNewItemContentForm({...newItemContentForm, videoUrl: e.target.value})} className="w-full p-2 rounded-md border text-sm" required />

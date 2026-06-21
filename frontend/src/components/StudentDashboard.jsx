@@ -351,32 +351,32 @@ const StudentDashboard = ({ token, student, setStudent, logout }) => {
                   )}
                 </div>
 
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8 w-full">
-                  <div className="bg-surface-container-lowest p-4 rounded-xl border border-outline-variant/30 flex items-start gap-3">
+                <div className="flex flex-col gap-3 mb-8 w-full">
+                  <div className="bg-surface-container-lowest p-4 rounded-xl border border-outline-variant/30 flex items-center gap-4">
                     <div className="p-2 bg-orange-100 text-orange-600 rounded-lg shrink-0">
                       <Calendar size={20} />
                     </div>
                     <div>
-                      <h4 className="font-bold text-sm text-text-primary">Attendance Report</h4>
-                      <p className="text-[10px] text-text-dim leading-tight">Daily tracking of your learning progress.</p>
+                      <h4 className="font-bold text-sm text-text-primary text-left">Attendance Report</h4>
+                      <p className="text-[10px] text-text-dim leading-tight text-left">Daily tracking of your learning progress.</p>
                     </div>
                   </div>
-                  <div className="bg-surface-container-lowest p-4 rounded-xl border border-outline-variant/30 flex items-start gap-3">
+                  <div className="bg-surface-container-lowest p-4 rounded-xl border border-outline-variant/30 flex items-center gap-4">
                     <div className="p-2 bg-success/10 text-success rounded-lg shrink-0">
                       <Award size={20} />
                     </div>
                     <div>
-                      <h4 className="font-bold text-sm text-text-primary">Certificate of Completion</h4>
-                      <p className="text-[10px] text-text-dim leading-tight">Earned upon passing final assessments.</p>
+                      <h4 className="font-bold text-sm text-text-primary text-left">Certificate of Completion</h4>
+                      <p className="text-[10px] text-text-dim leading-tight text-left">Earned upon passing final assessments.</p>
                     </div>
                   </div>
-                  <div className="bg-surface-container-lowest p-4 rounded-xl border border-outline-variant/30 flex items-start gap-3">
+                  <div className="bg-surface-container-lowest p-4 rounded-xl border border-outline-variant/30 flex items-center gap-4">
                     <div className="p-2 bg-primary/10 text-primary rounded-lg shrink-0">
                       <FileText size={20} />
                     </div>
                     <div>
-                      <h4 className="font-bold text-sm text-text-primary">Performance Report</h4>
-                      <p className="text-[10px] text-text-dim leading-tight">Detailed analytics of your learning journey.</p>
+                      <h4 className="font-bold text-sm text-text-primary text-left">Performance Report</h4>
+                      <p className="text-[10px] text-text-dim leading-tight text-left">Detailed analytics of your learning journey.</p>
                     </div>
                   </div>
                 </div>
