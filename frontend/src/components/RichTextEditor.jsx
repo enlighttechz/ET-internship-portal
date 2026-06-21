@@ -41,6 +41,9 @@ const RichTextEditor = ({ value, onChange, placeholder }) => {
         }
         
         setSelectedImage(e.target);
+        e.target.style.cursor = 'grab';
+        e.target.setAttribute('draggable', 'true');
+        
         setImgConfig({
           width: e.target.style.width || e.target.style.maxWidth || '100%',
           height: e.target.style.height || 'auto',
@@ -51,13 +54,40 @@ const RichTextEditor = ({ value, onChange, placeholder }) => {
         setSelectedImage(null);
       }
     };
+
+    const handleDragStart = (e) => {
+      if (e.target.tagName === 'IMG') {
+        e.target.style.cursor = 'grabbing';
+      }
+    };
+
+    const handleDrop = () => {
+      setTimeout(() => {
+        handleInput();
+      }, 50);
+    };
+
+    const handleDragEnd = (e) => {
+      if (e.target.tagName === 'IMG') {
+        e.target.style.cursor = 'grab';
+        handleInput();
+      }
+    };
     
     const ed = editorRef.current;
     if (ed) {
       ed.addEventListener('click', handleEditorClick);
+      ed.addEventListener('dragstart', handleDragStart);
+      ed.addEventListener('drop', handleDrop);
+      ed.addEventListener('dragend', handleDragEnd);
     }
     return () => {
-      if (ed) ed.removeEventListener('click', handleEditorClick);
+      if (ed) {
+        ed.removeEventListener('click', handleEditorClick);
+        ed.removeEventListener('dragstart', handleDragStart);
+        ed.removeEventListener('drop', handleDrop);
+        ed.removeEventListener('dragend', handleDragEnd);
+      }
     };
   }, [isPreview]);
 
@@ -122,7 +152,7 @@ const RichTextEditor = ({ value, onChange, placeholder }) => {
       const url = res.data.data.url;
       
       editorRef.current?.focus();
-      execCmd('insertHTML', `<img src="${url}" alt="Uploaded Image" style="max-width:100%;border-radius:8px;margin:8px 0;display:block;cursor:pointer;" />`);
+      execCmd('insertHTML', `<img src="${url}" alt="Uploaded Image" draggable="true" style="max-width:100%;border-radius:8px;margin:8px 0;display:block;cursor:grab;" />`);
     } catch (err) {
       alert('Failed to upload image. Please try again.');
     } finally {
