@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
-import { CheckCircle, Monitor, Smartphone, Cpu, Server, Bot, Code, Database, Shield, Award, FileText, CalendarCheck } from 'lucide-react';
+import { CheckCircle, Monitor, Smartphone, Cpu, Server, Bot, Code, Database, Shield, Award, FileText, CalendarCheck, ArrowLeft } from 'lucide-react';
 
 const API_URL = `${import.meta.env.VITE_API_BASE}/api`;
 
@@ -19,7 +19,7 @@ export const getIconComponent = (iconName, className) => {
   }
 };
 
-const DomainSelection = ({ token, student, setStudent }) => {
+const DomainSelection = ({ token, student, setStudent, logout }) => {
   const [domainData, setDomainData] = useState([]);
   const [selectedDomain, setSelectedDomain] = useState('');
   const [loading, setLoading] = useState(false);
@@ -37,8 +37,8 @@ const DomainSelection = ({ token, student, setStudent }) => {
   useEffect(() => {
     if (detailCourse) {
       setLoadingRoadmap(true);
-      axios.get(`${API_URL}/contents?domain=${detailCourse.title}`)
-        .then(res => setCourseRoadmap(res.data))
+      axios.get(`${API_URL}/course-days/${encodeURIComponent(detailCourse.title)}`)
+        .then(res => setCourseRoadmap(res.data.filter(d => !d.hidden)))
         .catch(err => console.error(err))
         .finally(() => setLoadingRoadmap(false));
     } else {
@@ -66,16 +66,22 @@ const DomainSelection = ({ token, student, setStudent }) => {
     }
   };
 
-  // Group roadmap by category
-  const groupedRoadmap = courseRoadmap.reduce((acc, item) => {
-    const cat = item.category || 'General';
-    if (!acc[cat]) acc[cat] = [];
-    acc[cat].push(item);
-    return acc;
-  }, {});
+
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-surface-container-low to-surface-container-highest py-12 px-4 sm:px-6 lg:px-8">
+    <div className="min-h-screen bg-gradient-to-br from-surface-container-low to-surface-container-highest py-12 px-4 sm:px-6 lg:px-8 relative">
+      {logout && (
+        <button 
+          onClick={() => {
+            logout();
+            setTimeout(() => navigate(-1), 50);
+          }} 
+          className="absolute top-6 left-6 p-2 bg-white/60 backdrop-blur-md hover:bg-white rounded-full shadow-sm border border-outline-variant/30 text-text-dim hover:text-primary transition-all flex items-center justify-center z-10 group"
+          title="Go Back"
+        >
+          <ArrowLeft size={24} className="group-hover:-translate-x-1 transition-transform" />
+        </button>
+      )}
       <div className="max-w-7xl mx-auto animate-slide-up">
         <div className="text-center mb-12">
           <h1 className="text-4xl md:text-5xl font-headline-lg font-bold text-primary mb-4 tracking-tight">Choose Your Internship Domain</h1>
@@ -175,22 +181,22 @@ const DomainSelection = ({ token, student, setStudent }) => {
                 <h3 className="text-lg font-bold text-text-primary mb-4">Course Roadmap Preview</h3>
                 {loadingRoadmap ? (
                   <p className="text-text-dim text-sm py-4 text-center">Loading roadmap...</p>
-                ) : Object.keys(groupedRoadmap).length > 0 ? (
+                ) : courseRoadmap.length > 0 ? (
                   <div className="relative mb-6">
                     <div className="space-y-3 max-h-40 overflow-hidden">
-                      {Object.entries(groupedRoadmap).map(([cat, items], idx) => (
-                        <div key={cat} className="flex items-start gap-3">
+                      {courseRoadmap.map((day, idx) => (
+                        <div key={day._id || day.dayNumber} className="flex items-start gap-3">
                           <div className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold text-white shrink-0 mt-0.5 ${(detailCourse.color || 'border-primary').replace('border-', 'bg-')}`}>
                             {idx + 1}
                           </div>
                           <div>
-                            <p className="font-bold text-sm text-text-primary">{cat}</p>
-                            <p className="text-xs text-text-dim">{items.length} module{items.length > 1 ? 's' : ''}</p>
+                            <p className="font-bold text-sm text-text-primary">Day {day.dayNumber}: {day.title}</p>
+                            <p className="text-xs text-text-dim">{day.items ? day.items.length : 0} module{(day.items ? day.items.length : 0) !== 1 ? 's' : ''}</p>
                           </div>
                         </div>
                       ))}
                     </div>
-                    {Object.keys(groupedRoadmap).length > 2 && (
+                    {courseRoadmap.length > 2 && (
                       <div className="absolute bottom-0 left-0 right-0 h-20 bg-gradient-to-t from-surface via-surface/80 to-transparent pointer-events-none"></div>
                     )}
                   </div>

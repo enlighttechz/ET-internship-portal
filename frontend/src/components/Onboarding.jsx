@@ -1,11 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
-import { MessageCircle, CheckCircle, BookOpen } from 'lucide-react';
+import { MessageCircle, CheckCircle, BookOpen, ArrowLeft } from 'lucide-react';
 
 const API_URL = `${import.meta.env.VITE_API_BASE}/api`;
 
-const Onboarding = ({ student, setStudent }) => {
+const Onboarding = ({ student, setStudent, logout }) => {
   const [course, setCourse] = useState(null);
   const [loading, setLoading] = useState(true);
   const [agreed, setAgreed] = useState(false);
@@ -47,6 +47,18 @@ const Onboarding = ({ student, setStudent }) => {
 
   return (
     <div className="min-h-screen bg-surface-container-lowest flex items-center justify-center p-4 relative overflow-hidden">
+      {logout && (
+        <button 
+          onClick={() => {
+            logout();
+            setTimeout(() => navigate(-1), 50);
+          }} 
+          className="absolute top-6 left-6 p-2 bg-surface hover:bg-surface-container-high rounded-full shadow-md text-text-dim hover:text-primary transition-all flex items-center justify-center z-20 group"
+          title="Go Back"
+        >
+          <ArrowLeft size={24} className="group-hover:-translate-x-1 transition-transform" />
+        </button>
+      )}
       {/* Decorative Blobs */}
       <div className="absolute -top-32 -left-32 w-96 h-96 bg-primary/10 rounded-full blur-3xl" />
       <div className="absolute -bottom-32 -right-32 w-96 h-96 bg-secondary/10 rounded-full blur-3xl" />

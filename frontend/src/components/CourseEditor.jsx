@@ -258,6 +258,10 @@ const CourseEditor = ({ course, contents, onRefresh, courses }) => {
                   <label className="text-xs font-bold text-text-dim uppercase tracking-wider mb-1 block">Image URL</label>
                   <input type="url" value={editForm.imageUrl || ''} onChange={e => setEditForm({ ...editForm, imageUrl: e.target.value })} className="w-full p-2.5 rounded-lg border border-outline-variant bg-white text-sm" />
                 </div>
+                <div>
+                  <label className="text-xs font-bold text-text-dim uppercase tracking-wider mb-1 block">Start Date</label>
+                  <input type="text" value={editForm.startDate || ''} onChange={e => setEditForm({ ...editForm, startDate: e.target.value })} placeholder="DD/MM/YYYY" className="w-full p-2.5 rounded-lg border border-outline-variant bg-white text-sm" />
+                </div>
               </div>
               <div>
                 <label className="text-xs font-bold text-text-dim uppercase tracking-wider mb-1 block">Description</label>

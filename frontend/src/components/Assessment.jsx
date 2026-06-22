@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import * as soundLibrary from '../utils/soundLibrary';
 
 const Assessment = ({ assessment, onSubmit }) => {
   const [answers, setAnswers] = useState(() => {
@@ -34,7 +35,7 @@ const Assessment = ({ assessment, onSubmit }) => {
 
   const handleSubmit = () => {
     if (!assessment || !assessment.questions) return;
-    
+
     // Check if any non-rearrange question is unanswered
     const isUnanswered = answers.some((ans, idx) => {
       const type = assessment.questions[idx].type;
@@ -44,7 +45,10 @@ const Assessment = ({ assessment, onSubmit }) => {
     if (isUnanswered) {
       return alert("Please answer all questions before submitting.");
     }
-    
+
+    // Play success sound on submission
+    soundLibrary.playSuccessChime();
+
     onSubmit(answers);
   };
 

@@ -16,6 +16,7 @@ import './index.css';
 import AdminLayout from './components/admin/AdminLayout';
 import AdminCourseManager from './components/admin/AdminCourseManager';
 import AdminStudentManager from './components/admin/AdminStudentManager';
+import AdminStudentDetails from './components/admin/AdminStudentDetails';
 import AdminAssessmentBuilder from './components/admin/AdminAssessmentBuilder';
 import AdminNotificationManager from './components/admin/AdminNotificationManager';
 import AdminChatPanel from './components/admin/AdminChatPanel';
@@ -59,7 +60,7 @@ function App() {
 
   if (showSplash) {
     return (
-      <div className="min-h-screen flex flex-col items-center justify-center bg-gradient-to-br from-surface-container-low to-surface-container-highest">
+      <div className="min-h-screen flex flex-col items-center justify-center overflow-hidden bg-gradient-to-br from-surface-container-low to-surface-container-highest">
         <div className="flex flex-col items-center animate-slide-up">
           <div className="w-32 h-32 bg-primary/5 rounded-3xl flex items-center justify-center shadow-lg border border-primary/10 mb-6 p-4">
             <img src={ETLogo} alt="Enlight Techz Logo" className="w-full h-full object-contain animate-pulse" loading="lazy" />
@@ -84,9 +85,9 @@ function App() {
           <Route path="/" element={token ? (student && !student.hasCompletedProfile ? <Navigate to="/complete-profile" /> : student && student.domain === 'Pending' ? <Navigate to="/domain-selection" /> : student && !student.hasCompletedOnboarding ? <Navigate to="/onboarding" /> : <Roadmap token={token} student={student} logout={logout} />) : <Navigate to="/login" />} />
           <Route path="/dashboard" element={token ? (student && !student.hasCompletedProfile ? <Navigate to="/complete-profile" /> : student && student.domain === 'Pending' ? <Navigate to="/domain-selection" /> : student && !student.hasCompletedOnboarding ? <Navigate to="/onboarding" /> : <StudentDashboard token={token} student={student} setStudent={setStudent} logout={logout} />) : <Navigate to="/login" />} />
           <Route path="/course" element={token ? (student && !student.hasCompletedProfile ? <Navigate to="/complete-profile" /> : student && student.domain === 'Pending' ? <Navigate to="/domain-selection" /> : student && !student.hasCompletedOnboarding ? <Navigate to="/onboarding" /> : <CourseViewer token={token} student={student} logout={logout} />) : <Navigate to="/login" />} />
-          <Route path="/domain-selection" element={token ? (student && !student.hasCompletedProfile ? <Navigate to="/complete-profile" /> : <DomainSelection token={token} student={student} setStudent={setStudent} />) : <Navigate to="/login" />} />
-          <Route path="/onboarding" element={token ? (student && !student.hasCompletedProfile ? <Navigate to="/complete-profile" /> : <Onboarding student={student} setStudent={setStudent} />) : <Navigate to="/login" />} />
-          <Route path="/complete-profile" element={token ? <CompleteProfile token={token} student={student} setStudent={setStudent} /> : <Navigate to="/login" />} />
+          <Route path="/domain-selection" element={token ? (student && !student.hasCompletedProfile ? <Navigate to="/complete-profile" /> : <DomainSelection token={token} student={student} setStudent={setStudent} logout={logout} />) : <Navigate to="/login" />} />
+          <Route path="/onboarding" element={token ? (student && !student.hasCompletedProfile ? <Navigate to="/complete-profile" /> : <Onboarding student={student} setStudent={setStudent} logout={logout} />) : <Navigate to="/login" />} />
+          <Route path="/complete-profile" element={token ? <CompleteProfile token={token} student={student} setStudent={setStudent} logout={logout} /> : <Navigate to="/login" />} />
           <Route path="/login" element={!token ? <Login setToken={setToken} /> : <Navigate to="/" />} />
           <Route path="/register" element={!token ? <Register setToken={setToken} /> : <Navigate to="/" />} />
           <Route path="/forgot-password" element={!token ? <ForgotPassword /> : <Navigate to="/" />} />
@@ -94,6 +95,7 @@ function App() {
             <Route index element={<Navigate to="courses" replace />} />
             <Route path="courses" element={<AdminCourseManager />} />
             <Route path="students" element={<AdminStudentManager />} />
+            <Route path="students/:id" element={<AdminStudentDetails />} />
             <Route path="assessments" element={<AdminAssessmentBuilder />} />
             <Route path="notifications" element={<AdminNotificationManager />} />
             <Route path="chat" element={<AdminChatPanel />} />

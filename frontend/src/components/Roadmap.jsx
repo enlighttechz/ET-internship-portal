@@ -8,12 +8,20 @@ const API_URL = `${import.meta.env.VITE_API_BASE}/api`;
 
 const Roadmap = ({ token, student, logout }) => {
   const [courseDays, setCourseDays] = useState([]);
+  const [courseDetails, setCourseDetails] = useState(null);
   const navigate = useNavigate();
 
   useEffect(() => {
     if (student) {
-      axios.get(`${API_URL}/course-days/${student.domain}`)
+      axios.get(`${API_URL}/course-days/${encodeURIComponent(student.domain)}/summary`)
         .then(res => setCourseDays(res.data.filter(d => !d.hidden).sort((a,b) => a.dayNumber - b.dayNumber)))
+        .catch(err => console.error(err));
+        
+      axios.get(`${API_URL}/courses`)
+        .then(res => {
+          const match = res.data.find(c => c.title === student.domain);
+          setCourseDetails(match);
+        })
         .catch(err => console.error(err));
     }
   }, [student]);
@@ -32,6 +40,19 @@ const Roadmap = ({ token, student, logout }) => {
   const learningProgress = student.learningProgress || 1;
   const currentDay = courseDays.find(d => d.dayNumber === learningProgress);
   const isAssessmentStage = courseDays.length > 0 && learningProgress > Math.max(...courseDays.map(d => d.dayNumber));
+
+  let expectedTotalDays = courseDays.length || 24; 
+  if (courseDetails?.duration) {
+    const weeksMatch = courseDetails.duration.match(/(\d+)/);
+    if (weeksMatch) {
+      expectedTotalDays = parseInt(weeksMatch[1], 10) * 6;
+    }
+  }
+
+  const totalDays = Math.max(expectedTotalDays, courseDays.length);
+  // Subtract 1 from learningProgress since day 1 means 0% complete. Cap at totalDays.
+  const completedDays = Math.min(totalDays, Math.max(0, learningProgress - 1));
+  const progressPercent = courseDays.length > 0 ? Math.round((completedDays / totalDays) * 100) : 0;
 
   const currentWeekNum = Math.floor((learningProgress - 1) / 6) + 1;
   const currentDayNum = ((learningProgress - 1) % 6) + 1;
@@ -87,9 +108,9 @@ const Roadmap = ({ token, student, logout }) => {
               <div className="relative flex justify-center items-center">
                 <svg className="w-32 h-32 transform -rotate-90">
                   <circle cx="64" cy="64" r="56" stroke="currentColor" strokeWidth="12" fill="transparent" className="text-surface-container-highest" />
-                  <circle cx="64" cy="64" r="56" stroke="currentColor" strokeWidth="12" fill="transparent" strokeDasharray={56 * 2 * Math.PI} strokeDashoffset={56 * 2 * Math.PI - (student.attendance / 100) * 56 * 2 * Math.PI} className="text-primary transition-all duration-1000 ease-out" />
+                  <circle cx="64" cy="64" r="56" stroke="currentColor" strokeWidth="12" fill="transparent" strokeDasharray={56 * 2 * Math.PI} strokeDashoffset={56 * 2 * Math.PI - (progressPercent / 100) * 56 * 2 * Math.PI} className="text-primary transition-all duration-1000 ease-out" />
                 </svg>
-                <div className="absolute text-3xl font-extrabold text-primary">{student.attendance}%</div>
+                <div className="absolute text-3xl font-extrabold text-primary">{progressPercent}%</div>
               </div>
               <p className="text-xs text-text-dim text-center mt-4 max-w-[150px]">Updates automatically as you progress</p>
             </div>

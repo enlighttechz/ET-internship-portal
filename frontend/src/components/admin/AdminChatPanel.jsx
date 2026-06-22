@@ -44,7 +44,7 @@ const AdminChatPanel = () => {
     if (!activeStudent) return;
     try {
       const res = await axios.get(`${API_URL}/recommendations/${activeStudent._id}`);
-      setMessages(res.data);
+      setMessages(res.data.messages || []);
       messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
     } catch(err) { console.error(err); }
   };
@@ -54,8 +54,8 @@ const AdminChatPanel = () => {
     if (!recommendationText.trim() || !activeStudent) return;
     try {
       await axios.post(`${API_URL}/recommendations/${activeStudent._id}`, {
-        message: recommendationText,
-        sender: 'admin'
+        text: recommendationText,
+        senderRole: 'Admin'
       });
       setRecommendationText('');
       fetchChat();
@@ -121,10 +121,10 @@ const AdminChatPanel = () => {
 
               <div className="flex-1 p-6 overflow-y-auto space-y-4">
                 {messages.map((m, idx) => (
-                  <div key={idx} className={`flex ${m.sender === 'admin' ? 'justify-end' : 'justify-start'}`}>
-                    <div className={`max-w-[70%] p-3 rounded-2xl shadow-sm ${m.sender === 'admin' ? 'bg-primary text-white rounded-tr-sm' : 'bg-surface-container-highest text-on-surface rounded-tl-sm border border-outline-variant/30'}`}>
-                      <p className="text-sm">{m.message}</p>
-                      <span className={`text-[10px] mt-1 block opacity-70 ${m.sender === 'admin' ? 'text-right' : 'text-left'}`}>
+                  <div key={idx} className={`flex ${m.senderRole === 'Admin' ? 'justify-end' : 'justify-start'}`}>
+                    <div className={`max-w-[70%] p-3 rounded-2xl shadow-sm ${m.senderRole === 'Admin' ? 'bg-primary text-white rounded-tr-sm' : 'bg-surface-container-highest text-on-surface rounded-tl-sm border border-outline-variant/30'}`}>
+                      <p className="text-sm">{m.text}</p>
+                      <span className={`text-[10px] mt-1 block opacity-70 ${m.senderRole === 'Admin' ? 'text-right' : 'text-left'}`}>
                         {new Date(m.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                       </span>
                     </div>

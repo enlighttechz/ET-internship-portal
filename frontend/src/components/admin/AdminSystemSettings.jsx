@@ -6,6 +6,8 @@ const API_URL = `${import.meta.env.VITE_API_BASE}/api`;
 
 const AdminSystemSettings = () => {
   const [geminiKeysInput, setGeminiKeysInput] = useState('');
+  const [isCourseShuttered, setIsCourseShuttered] = useState(false);
+  const [shutterNote, setShutterNote] = useState('');
 
   useEffect(() => {
     fetchSystemConfig();
@@ -14,8 +16,12 @@ const AdminSystemSettings = () => {
   const fetchSystemConfig = async () => {
     try {
       const res = await axios.get(`${API_URL}/system-config`);
-      if (res.data && res.data.geminiApiKeys) {
-        setGeminiKeysInput(res.data.geminiApiKeys.join(',\n'));
+      if (res.data) {
+        if (res.data.geminiApiKeys) {
+          setGeminiKeysInput(res.data.geminiApiKeys.join(',\n'));
+        }
+        setIsCourseShuttered(res.data.isCourseShuttered || false);
+        setShutterNote(res.data.shutterNote || '');
       }
     } catch(err) { console.error(err); }
   };
@@ -24,9 +30,20 @@ const AdminSystemSettings = () => {
     e.preventDefault();
     const keysArray = geminiKeysInput.split(',').map(k => k.trim()).filter(Boolean);
     try {
-      await axios.put(`${API_URL}/system-config`, { geminiApiKeys: keysArray });
+      await axios.put(`${API_URL}/system-config`, { geminiApiKeys: keysArray, isCourseShuttered, shutterNote });
       alert("System Config updated!");
     } catch(err) { alert("Error updating config."); }
+  };
+
+  const handleToggleShutter = async (checked) => {
+    setIsCourseShuttered(checked);
+    try {
+      await axios.put(`${API_URL}/system-config`, { isCourseShuttered: checked });
+    } catch(err) {
+      console.error(err);
+      setIsCourseShuttered(!checked); // Revert on fail
+      alert("Failed to toggle shutter");
+    }
   };
 
   return (
@@ -57,6 +74,32 @@ const AdminSystemSettings = () => {
               If all keys fail, an urgent alert will be broadcasted to the Notification Manager.
             </p>
           </div>
+          
+          <div className="pt-4 border-t border-outline-variant/30">
+            <label className="flex items-center justify-between cursor-pointer mb-4">
+              <div>
+                <span className="block text-sm font-bold text-on-surface uppercase tracking-wider">Course Page Shutter</span>
+                <span className="text-sm text-text-dim block mt-1">If enabled, students will not be able to access the course content and will see a "Please visit this course after 1 hour" message, or your custom note below.</span>
+              </div>
+              <div className="relative">
+                <input type="checkbox" className="sr-only" checked={isCourseShuttered} onChange={(e) => handleToggleShutter(e.target.checked)} />
+                <div className={`block w-14 h-8 rounded-full transition-colors ${isCourseShuttered ? 'bg-error' : 'bg-surface-container-highest'}`}></div>
+                <div className={`dot absolute left-1 top-1 bg-white w-6 h-6 rounded-full transition-transform ${isCourseShuttered ? 'transform translate-x-6' : ''}`}></div>
+              </div>
+            </label>
+            {isCourseShuttered && (
+              <div className="mt-4 animate-fade-in">
+                <label className="block text-xs font-bold text-text-dim mb-2 uppercase tracking-wider">Custom Shutter Note</label>
+                <textarea 
+                  value={shutterNote}
+                  onChange={e => setShutterNote(e.target.value)}
+                  placeholder="The course content is currently closed for maintenance or scheduled downtime. Please visit this course after 1 hour."
+                  className="w-full p-4 rounded-xl border border-outline-variant bg-surface-container-lowest focus:border-error focus:ring-1 focus:ring-error outline-none text-sm min-h-[100px]"
+                />
+              </div>
+            )}
+          </div>
+
           <div className="pt-4 flex justify-end">
             <button type="submit" className="bg-success text-white px-8 py-3 rounded-xl font-bold hover:bg-[#15803d] shadow-md transition-colors flex items-center gap-2">
               <Save size={20} /> Save Configuration

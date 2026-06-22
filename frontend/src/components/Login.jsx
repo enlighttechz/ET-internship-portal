@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import axios from 'axios';
-import { Mail, Lock, EyeOff, GraduationCap } from 'lucide-react';
+import { Mail, Lock, EyeOff, Eye, GraduationCap } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import ETLogo from '../assets/ET.png';
 
@@ -10,6 +10,7 @@ const Login = ({ setToken }) => {
   const navigate = useNavigate();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
 
   const handleLogin = async (e) => {
     e.preventDefault();
@@ -75,12 +76,12 @@ const Login = ({ setToken }) => {
                   name="password" 
                   placeholder="••••••••" 
                   required 
-                  type="password"
+                  type={showPassword ? "text" : "password"}
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                 />
-                <button className="absolute inset-y-0 right-0 pr-3 flex items-center text-outline hover:text-primary transition-colors cursor-pointer" type="button">
-                  <EyeOff size={20} />
+                <button onClick={() => setShowPassword(!showPassword)} className="absolute inset-y-0 right-0 pr-3 flex items-center text-outline hover:text-primary transition-colors cursor-pointer" type="button">
+                  {showPassword ? <Eye size={20} /> : <EyeOff size={20} />}
                 </button>
               </div>
             </div>

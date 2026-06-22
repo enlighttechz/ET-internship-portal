@@ -113,18 +113,16 @@ app.get('/api/system-config', async (req, res) => {
 
 app.put('/api/system-config', async (req, res) => {
   try {
-    const { geminiApiKeys } = req.body;
-    let config = await SystemConfig.findOne();
-    if (!config) config = new SystemConfig();
-    config.geminiApiKeys = geminiApiKeys;
-    await config.save();
+    const { geminiApiKeys, isCourseShuttered, shutterNote } = req.body;
+    let updateObj = {};
+    if (geminiApiKeys !== undefined) updateObj.geminiApiKeys = geminiApiKeys;
+    if (isCourseShuttered !== undefined) updateObj.isCourseShuttered = isCourseShuttered;
+    if (shutterNote !== undefined) updateObj.shutterNote = shutterNote;
+
+    let config = await SystemConfig.findOneAndUpdate({}, { $set: updateObj }, { new: true, upsert: true });
     res.json(config);
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
-
-mongoose.connect(process.env.MONGO_URI || 'mongodb://127.0.0.1:27017/lms')
-  .then(() => console.log('MongoDB Connected'))
-  .catch(err => console.log(err));
 
 // Middleware
 const protect = (req, res, next) => {
@@ -138,6 +136,39 @@ const protect = (req, res, next) => {
     res.status(401).json({ msg: 'Token is not valid' });
   }
 };
+
+// --- AI Q&A Evaluation ---
+app.post('/api/evaluate-answer', protect, async (req, res) => {
+  const { question, expectedAnswer, studentAnswer } = req.body;
+  if (!question || !studentAnswer) return res.status(400).json({ error: 'Question and student answer are required' });
+  
+  try {
+    const prompt = `You are an expert evaluator. The user is answering the following question: "${question}".
+The expected answer or core concept is: "${expectedAnswer || 'General correctness'}".
+The student's answer is: "${studentAnswer}".
+
+Evaluate if the student's answer is correct or sufficiently accurate. 
+Return the response ONLY as a valid JSON object with the following exact keys:
+{
+  "isCorrect": true/false,
+  "aiReason": "A brief explanation and feedback directly addressed to the student (e.g. 'Great job! You correctly identified...', or 'Not quite. The correct concept is...')."
+}`;
+    
+    const rawResponse = await getGeminiResponse(prompt);
+    // Find JSON block
+    const match = rawResponse.match(/```json\n([\s\S]*?)\n```/);
+    const jsonStr = match ? match[1] : rawResponse.replace(/```json|```/g, '');
+    
+    const evaluation = JSON.parse(jsonStr.trim());
+    res.json(evaluation);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+mongoose.connect(process.env.MONGO_URI || 'mongodb://127.0.0.1:27017/lms')
+  .then(() => console.log('MongoDB Connected'))
+  .catch(err => console.log(err));
 
 // Auth API
 app.post('/api/auth/register', async (req, res) => {
@@ -286,11 +317,15 @@ app.get('/api/auth/me', protect, async (req, res) => {
 
 app.put('/api/auth/profile', protect, async (req, res) => {
   try {
-    const { name, contact, domain, addDomain } = req.body;
+    const { name, contact, domain, addDomain, collegeName, location, degree, specialization } = req.body;
     const updateData = {};
     if (name) updateData.name = name;
     if (contact) updateData.contact = contact;
     if (domain) updateData.domain = domain;
+    if (collegeName !== undefined) updateData.collegeName = collegeName;
+    if (location !== undefined) updateData.location = location;
+    if (degree !== undefined) updateData.degree = degree;
+    if (specialization !== undefined) updateData.specialization = specialization;
     
     let updateQuery = {};
     if (Object.keys(updateData).length > 0) {
@@ -482,9 +517,67 @@ app.delete('/api/contents/:id', async (req, res) => {
 });
 
 // Course Day API
+const apiCache = new Map();
+const CACHE_TTL = 30 * 60 * 1000; // 30 minutes
+
+const getCache = (key) => {
+  const item = apiCache.get(key);
+  if (item && Date.now() - item.timestamp < CACHE_TTL) {
+    return item.data;
+  }
+  return null;
+};
+
+const setCache = (key, data) => {
+  apiCache.set(key, { data, timestamp: Date.now() });
+};
+app.get('/api/course-days/:domain/summary', async (req, res) => {
+  try {
+    const cacheKey = `summary_${req.params.domain}`;
+    const cachedData = getCache(cacheKey);
+    if (cachedData) return res.json(cachedData);
+
+    const courseDays = await CourseDay.find({ domain: req.params.domain })
+      .select('-items.content -items.body -items.expectedAnswer')
+      .sort({ dayNumber: 1 })
+      .lean();
+    
+    setCache(cacheKey, courseDays);
+    res.json(courseDays);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.get('/api/course-days/:domain/day/:dayNumber', async (req, res) => {
+  try {
+    const cacheKey = `day_${req.params.domain}_${req.params.dayNumber}`;
+    const cachedData = getCache(cacheKey);
+    if (cachedData) return res.json(cachedData);
+
+    const courseDay = await CourseDay.findOne({ 
+      domain: req.params.domain, 
+      dayNumber: req.params.dayNumber 
+    }).lean();
+    
+    if (!courseDay) return res.status(404).json({ error: 'Day not found' });
+    
+    setCache(cacheKey, courseDay);
+    res.json(courseDay);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 app.get('/api/course-days/:domain', async (req, res) => {
   try {
-    const courseDays = await CourseDay.find({ domain: req.params.domain }).sort({ dayNumber: 1 });
+    const cacheKey = `fulldomain_${req.params.domain}`;
+    const cachedData = getCache(cacheKey);
+    if (cachedData) return res.json(cachedData);
+
+    const courseDays = await CourseDay.find({ domain: req.params.domain }).sort({ dayNumber: 1 }).lean();
+    
+    setCache(cacheKey, courseDays);
     res.json(courseDays);
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -496,6 +589,7 @@ app.post('/api/course-days', async (req, res) => {
     const { domain, dayNumber, title, description, items, qnaText, geminiPrompt } = req.body;
     const newDay = new CourseDay({ domain, dayNumber, title, description, items: items || [], qnaText, geminiPrompt });
     await newDay.save();
+    apiCache.clear();
     res.json(newDay);
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -505,6 +599,7 @@ app.post('/api/course-days', async (req, res) => {
 app.put('/api/course-days/:id', async (req, res) => {
   try {
     const updated = await CourseDay.findByIdAndUpdate(req.params.id, req.body, { new: true });
+    apiCache.clear();
     res.json(updated);
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -514,6 +609,7 @@ app.put('/api/course-days/:id', async (req, res) => {
 app.delete('/api/course-days/:id', async (req, res) => {
   try {
     await CourseDay.findByIdAndDelete(req.params.id);
+    apiCache.clear();
     res.json({ success: true });
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -642,13 +738,23 @@ app.put('/api/students/:id/course', async (req, res) => {
     if (!student) return res.status(404).json({ msg: 'Student not found' });
     
     if (student.domain === domain) {
-      if (learningProgress !== undefined) student.learningProgress = learningProgress;
+      if (learningProgress !== undefined) {
+        if (learningProgress > student.learningProgress) {
+          student.lastDayCompletedAt = new Date();
+        }
+        student.learningProgress = learningProgress;
+      }
       if (attendance !== undefined) student.attendance = attendance;
       if (assessmentScore !== undefined) student.assessmentScore = assessmentScore;
     } else {
       const course = student.additionalCourses.find(c => c.domain === domain);
       if (course) {
-        if (learningProgress !== undefined) course.learningProgress = learningProgress;
+        if (learningProgress !== undefined) {
+          if (learningProgress > course.learningProgress) {
+            course.lastDayCompletedAt = new Date();
+          }
+          course.learningProgress = learningProgress;
+        }
         if (attendance !== undefined) course.attendance = attendance;
         if (assessmentScore !== undefined) course.assessmentScore = assessmentScore;
       }

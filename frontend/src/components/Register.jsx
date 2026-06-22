@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import axios from 'axios';
-import { Mail, Lock, User, Monitor, EyeOff, GraduationCap } from 'lucide-react';
+import { Mail, Lock, User, Monitor, EyeOff, Eye, GraduationCap, ArrowLeft } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import ETLogo from '../assets/ET.png';
 
@@ -11,6 +11,7 @@ const Register = ({ setToken }) => {
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
 
   const handleRegister = async (e) => {
     e.preventDefault();
@@ -24,7 +25,14 @@ const Register = ({ setToken }) => {
   };
 
   return (
-    <div className="bg-background text-on-surface font-body-md antialiased p-4 min-h-screen flex items-center justify-center bg-gradient-to-br from-surface-container-low to-surface-container-highest">
+    <div className="bg-background text-on-surface font-body-md antialiased p-4 min-h-screen flex items-center justify-center bg-gradient-to-br from-surface-container-low to-surface-container-highest relative">
+      <button 
+        onClick={() => navigate(-1)} 
+        className="absolute top-6 left-6 p-2 bg-white/60 backdrop-blur-md hover:bg-white rounded-full shadow-sm border border-outline-variant/30 text-text-dim hover:text-primary transition-all flex items-center justify-center z-10 group"
+        title="Go Back"
+      >
+        <ArrowLeft size={24} className="group-hover:-translate-x-1 transition-transform" />
+      </button>
       <main className="w-full max-w-md mx-auto animate-slide-up">
         {/* Register Card */}
         <div className="glass-card rounded-2xl p-8 md:p-10 relative overflow-hidden bg-white/60">
@@ -94,12 +102,12 @@ const Register = ({ setToken }) => {
                   id="password" 
                   placeholder="••••••••" 
                   required 
-                  type="password"
+                  type={showPassword ? "text" : "password"}
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                 />
-                <button className="absolute inset-y-0 right-0 pr-3 flex items-center text-outline hover:text-primary transition-colors cursor-pointer" type="button">
-                  <EyeOff size={20} />
+                <button onClick={() => setShowPassword(!showPassword)} className="absolute inset-y-0 right-0 pr-3 flex items-center text-outline hover:text-primary transition-colors cursor-pointer" type="button">
+                  {showPassword ? <Eye size={20} /> : <EyeOff size={20} />}
                 </button>
               </div>
             </div>

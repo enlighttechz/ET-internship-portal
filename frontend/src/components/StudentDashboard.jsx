@@ -27,6 +27,32 @@ const StudentDashboard = ({ token, student, setStudent, logout }) => {
   const [feedbackRating, setFeedbackRating] = useState(0);
   const [feedbackMsg, setFeedbackMsg] = useState('');
 
+  const [showProfileModal, setShowProfileModal] = useState(false);
+  const [profileData, setProfileData] = useState({
+    name: student?.name || '',
+    contact: student?.contact || '',
+    collegeName: student?.collegeName || '',
+    location: student?.location || '',
+    degree: student?.degree || '',
+    specialization: student?.specialization || ''
+  });
+  const [updatingProfile, setUpdatingProfile] = useState(false);
+
+  const handleUpdateProfile = async (e) => {
+    e.preventDefault();
+    setUpdatingProfile(true);
+    try {
+      const res = await axios.put(`${API_URL}/auth/profile`, profileData, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      setStudent(res.data);
+      setShowProfileModal(false);
+    } catch (err) {
+      alert(err.response?.data?.error || err.message);
+    }
+    setUpdatingProfile(false);
+  };
+
   useEffect(() => {
     if (showChat) {
       fetchChat();
@@ -35,11 +61,35 @@ const StudentDashboard = ({ token, student, setStudent, logout }) => {
     }
   }, [showChat]);
 
+  useEffect(() => {
+    if (showProfileModal || showChat || showFeedbackModal || showImproveModal) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = 'unset';
+    }
+    return () => {
+      document.body.style.overflow = 'unset';
+    };
+  }, [showProfileModal, showChat, showFeedbackModal, showImproveModal]);
+
+  useEffect(() => {
+    if (showProfileModal) {
+      setProfileData({
+        name: student?.name || '',
+        contact: student?.contact || '',
+        collegeName: student?.collegeName || '',
+        location: student?.location || '',
+        degree: student?.degree || '',
+        specialization: student?.specialization || ''
+      });
+    }
+  }, [showProfileModal, student]);
+
   const fetchChat = async () => {
     try {
       if (!student) return;
       const res = await axios.get(`${API_URL}/recommendations/${student._id}`);
-      setChatMessages(res.data);
+      setChatMessages(res.data.messages || []);
       chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
     } catch(err) { console.error(err); }
   };
@@ -69,15 +119,15 @@ const StudentDashboard = ({ token, student, setStudent, logout }) => {
     if (!msg.trim()) return;
     try {
       if (!student) return;
-      const res = await axios.post(`${API_URL}/recommendations/${student._id}`, { message: msg, sender: 'student' }, { headers: { Authorization: `Bearer ${token}` } });
-      setChatMessages(res.data);
+      const res = await axios.post(`${API_URL}/recommendations/${student._id}`, { text: msg, senderRole: 'Student' }, { headers: { Authorization: `Bearer ${token}` } });
+      setChatMessages(res.data.messages || []);
     } catch(err) { console.error(err); }
   };
 
   useEffect(() => {
     if (selectedCourse) {
       setLoadingRoadmap(true);
-      axios.get(`${API_URL}/course-days/${selectedCourse.title}`)
+      axios.get(`${API_URL}/course-days/${encodeURIComponent(selectedCourse.title)}/summary`)
         .then(res => setCourseRoadmap(res.data.filter(d => !d.hidden)))
         .catch(err => console.error("Failed to load roadmap:", err))
         .finally(() => setLoadingRoadmap(false));
@@ -94,8 +144,10 @@ const StudentDashboard = ({ token, student, setStudent, logout }) => {
     if (registeredDomains.length > 0) {
       registeredDomains.forEach(domain => {
         if (registeredCourseDays[domain.title] === undefined) {
-          axios.get(`${API_URL}/course-days/${domain.title}`)
-            .then(res => setRegisteredCourseDays(prev => ({...prev, [domain.title]: res.data.filter(d => !d.hidden).length})))
+          axios.get(`${API_URL}/course-days/${encodeURIComponent(domain.title)}/summary`)
+            .then(res => {
+              setRegisteredCourseDays(prev => ({...prev, [domain.title]: Math.max(1, res.data.filter(d => !d.hidden).length)}));
+            })
             .catch(err => console.error(err));
         }
       });
@@ -147,14 +199,15 @@ const StudentDashboard = ({ token, student, setStudent, logout }) => {
   return (
     <div className="min-h-screen bg-gradient-to-br from-surface-container-low to-surface-container-highest">
       <header className="bg-surface shadow-sm border-b border-outline-variant/30 sticky top-0 z-30">
-        <div className="max-w-7xl mx-auto px-4 sm:6 lg:px-8 h-16 flex items-center justify-between">
-          <div className="flex items-center gap-3 cursor-pointer" onClick={() => navigate('/')}>
-            <img src={ETLogo} alt="Enlight Techz Logo" className="w-8 h-8 drop-shadow-md" />
-            <span className="font-headline-md text-xl font-bold text-primary">Enlight Techz</span>
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+          <div className="flex items-center gap-2 md:gap-3 cursor-pointer shrink-0" onClick={() => navigate('/')}>
+            <img src={ETLogo} alt="Enlight Techz Logo" className="w-6 h-6 md:w-8 md:h-8 drop-shadow-md" />
+            <span className="font-headline-md text-base md:text-xl font-bold text-primary whitespace-nowrap">Enlight Techz</span>
           </div>
-          <div className="flex items-center gap-4">
-            <div className="hidden md:flex items-center gap-3 mr-4">
-              <div className="w-8 h-8 rounded-full bg-primary text-white flex items-center justify-center font-bold">
+          <div className="flex items-center gap-2 md:gap-4">
+            {/* Desktop Profile Info */}
+            <div className="hidden md:flex items-center gap-3 md:mr-4 cursor-pointer hover:bg-surface-container rounded-xl px-3 py-1.5 transition-colors" onClick={() => setShowProfileModal(true)}>
+              <div className="w-8 h-8 rounded-full bg-primary text-white flex items-center justify-center font-bold shrink-0">
                 {student.name ? student.name.charAt(0).toUpperCase() : 'S'}
               </div>
               <div>
@@ -162,18 +215,24 @@ const StudentDashboard = ({ token, student, setStudent, logout }) => {
                 <p className="text-[10px] text-text-dim">{student.internId}</p>
               </div>
             </div>
+
+            {/* Mobile Profile Icon */}
+            <button onClick={() => setShowProfileModal(true)} className="md:hidden w-8 h-8 rounded-full bg-primary text-white flex items-center justify-center font-bold shrink-0 shadow-sm">
+              {student.name ? student.name.charAt(0).toUpperCase() : 'S'}
+            </button>
+
             <button onClick={() => setShowChat(true)} className="p-2 bg-surface-container hover:bg-outline-variant/30 text-primary border border-outline-variant/50 rounded-xl transition-colors shrink-0 flex items-center justify-center relative">
-              <MessageSquare size={20} />
+              <MessageSquare size={18} className="md:w-5 md:h-5" />
             </button>
             <button onClick={() => setShowFeedbackModal(true)} className="p-2 bg-surface-container hover:bg-outline-variant/30 text-yellow-500 border border-outline-variant/50 rounded-xl transition-colors shrink-0 flex items-center justify-center">
-              <Star size={20} />
+              <Star size={18} className="md:w-5 md:h-5" />
             </button>
             <button 
               onClick={logout}
-              className="flex items-center gap-2 px-4 py-2 rounded-lg text-error hover:bg-error/10 transition-colors border border-error/20"
+              className="flex items-center gap-1 md:gap-2 px-2 py-1.5 md:px-4 md:py-2 rounded-lg text-error hover:bg-error/10 transition-colors border border-error/20 shrink-0"
             >
               <LogOut size={16} />
-              <span className="text-sm font-bold">Log Out</span>
+              <span className="text-xs md:text-sm font-bold hidden sm:inline">Log Out</span>
             </button>
           </div>
         </div>
@@ -195,10 +254,17 @@ const StudentDashboard = ({ token, student, setStudent, logout }) => {
             <div className="flex flex-col gap-4">
               {registeredDomains.map(domain => {
                 const sData = student.domain === domain.title ? student : student.additionalCourses?.find(c => c.domain === domain.title);
-                const totalDays = registeredCourseDays[domain.title] || 1;
-                const progressVal = sData?.learningProgress || 0;
-                const isCompleted = progressVal >= totalDays;
-                const progressPercent = Math.min(100, Math.round((progressVal / totalDays) * 100));
+                let expectedTotalDays = registeredCourseDays[domain.title] || 1;
+                if (domain.duration) {
+                  const match = domain.duration.match(/(\d+)/);
+                  if (match) expectedTotalDays = parseInt(match[1], 10) * 6;
+                }
+                const totalDays = Math.max(expectedTotalDays, registeredCourseDays[domain.title] || 1);
+                
+                const progressVal = sData?.learningProgress || 1;
+                const completedDays = Math.min(totalDays, Math.max(0, progressVal - 1));
+                const isCompleted = progressVal > totalDays;
+                const progressPercent = Math.min(100, Math.round((completedDays / totalDays) * 100));
                 
                 const radius = 24;
                 const circumference = 2 * Math.PI * radius;
@@ -218,7 +284,7 @@ const StudentDashboard = ({ token, student, setStudent, logout }) => {
                       </div>
                       <div>
                         <h3 className="text-xl font-bold text-text-primary">{domain.title}</h3>
-                        <p className="text-xs text-text-dim">Day {progressVal} of {totalDays} completed</p>
+                        <p className="text-xs text-text-dim">{completedDays} of {totalDays} days completed</p>
                       </div>
                     </div>
                     
@@ -444,9 +510,9 @@ const StudentDashboard = ({ token, student, setStudent, logout }) => {
               </div>
               <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-surface-container-lowest">
                 {chatMessages.map((m, i) => (
-                  <div key={i} className={`flex flex-col ${m.sender === 'student' ? 'items-end' : 'items-start'}`}>
-                    <div className={`p-3 rounded-2xl max-w-[85%] text-sm shadow-sm ${m.sender === 'student' ? 'bg-primary text-white rounded-tr-sm' : 'bg-gray-100 text-gray-900 border border-gray-300 rounded-tl-sm font-medium'}`}>
-                      {m.message}
+                  <div key={i} className={`flex flex-col ${m.senderRole === 'Student' ? 'items-end' : 'items-start'}`}>
+                    <div className={`p-3 rounded-2xl max-w-[85%] text-sm shadow-sm ${m.senderRole === 'Student' ? 'bg-primary text-white rounded-tr-sm' : 'bg-gray-100 text-gray-900 border border-gray-300 rounded-tl-sm font-medium'}`}>
+                      {m.text}
                     </div>
                     <span className="text-[10px] text-text-dim mt-1">{new Date(m.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
                   </div>
@@ -475,7 +541,7 @@ const StudentDashboard = ({ token, student, setStudent, logout }) => {
         {/* Feedback Modal */}
         {showFeedbackModal && (
           <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
-            <div className="bg-surface w-full max-w-md p-6 rounded-3xl shadow-2xl border border-outline-variant/30 animate-fade-in relative">
+            <div className="bg-surface w-full max-w-md p-6 rounded-3xl shadow-2xl border border-outline-variant/30 animate-fade-in relative max-h-[90vh] overflow-y-auto no-scrollbar">
               <button onClick={() => setShowFeedbackModal(false)} className="absolute top-4 right-4 text-text-dim hover:text-error"><X size={24}/></button>
               <h3 className="text-2xl font-bold text-primary mb-2 flex items-center gap-2"><Star size={24} className="text-yellow-500" /> Course Feedback</h3>
               <p className="text-text-dim text-sm mb-6">How was your learning experience in {student.domain}?</p>
@@ -502,6 +568,55 @@ const StudentDashboard = ({ token, student, setStudent, logout }) => {
           </div>
         )}
       </main>
+
+      {/* Profile Modal */}
+      {showProfileModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-fade-in">
+          <div className="bg-surface rounded-3xl shadow-2xl max-w-md w-full max-h-[90vh] flex flex-col border border-outline-variant/30 animate-slide-up relative overflow-hidden">
+            <div className="p-5 border-b border-outline-variant/30 bg-surface-container-lowest flex items-center justify-between shrink-0">
+              <h3 className="font-bold text-lg text-primary">Update Profile</h3>
+              <button onClick={() => setShowProfileModal(false)} className="p-2 hover:bg-surface-container rounded-full transition-colors text-text-dim shrink-0">
+                <X size={20} />
+              </button>
+            </div>
+            <form onSubmit={handleUpdateProfile} className="p-6 flex flex-col gap-4 overflow-y-auto no-scrollbar">
+              <div>
+                <label className="block text-xs font-bold text-text-dim mb-1">Name</label>
+                <input type="text" value={student?.name || ''} disabled className="w-full px-4 py-2 bg-surface-container-highest/30 text-text-primary rounded-xl border border-outline-variant/30 cursor-not-allowed outline-none" />
+              </div>
+              <div>
+                <label className="block text-xs font-bold text-text-dim mb-1">Email</label>
+                <input type="email" value={student?.email || ''} disabled className="w-full px-4 py-2 bg-surface-container-highest/30 text-text-primary rounded-xl border border-outline-variant/30 cursor-not-allowed outline-none" />
+              </div>
+              <div>
+                <label className="block text-xs font-bold text-text-dim mb-1">Contact Number</label>
+                <input type="text" value={profileData.contact} onChange={e => setProfileData({...profileData, contact: e.target.value})} className="w-full px-4 py-2 bg-surface-container rounded-xl border border-outline-variant/30 focus:border-primary focus:ring-1 focus:ring-primary outline-none" required />
+              </div>
+              <div>
+                <label className="block text-xs font-bold text-text-dim mb-1">College Name</label>
+                <input type="text" value={profileData.collegeName} onChange={e => setProfileData({...profileData, collegeName: e.target.value})} className="w-full px-4 py-2 bg-surface-container rounded-xl border border-outline-variant/30 focus:border-primary focus:ring-1 focus:ring-primary outline-none" />
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-xs font-bold text-text-dim mb-1">Degree</label>
+                  <input type="text" value={profileData.degree} onChange={e => setProfileData({...profileData, degree: e.target.value})} className="w-full px-4 py-2 bg-surface-container rounded-xl border border-outline-variant/30 focus:border-primary focus:ring-1 focus:ring-primary outline-none" />
+                </div>
+                <div>
+                  <label className="block text-xs font-bold text-text-dim mb-1">Specialization</label>
+                  <input type="text" value={profileData.specialization} onChange={e => setProfileData({...profileData, specialization: e.target.value})} className="w-full px-4 py-2 bg-surface-container rounded-xl border border-outline-variant/30 focus:border-primary focus:ring-1 focus:ring-primary outline-none" />
+                </div>
+              </div>
+              <div>
+                <label className="block text-xs font-bold text-text-dim mb-1">Location</label>
+                <input type="text" value={profileData.location} onChange={e => setProfileData({...profileData, location: e.target.value})} className="w-full px-4 py-2 bg-surface-container rounded-xl border border-outline-variant/30 focus:border-primary focus:ring-1 focus:ring-primary outline-none" />
+              </div>
+              <button type="submit" disabled={updatingProfile} className="w-full py-3 bg-primary text-white font-bold rounded-xl hover:bg-primary/90 transition-colors mt-2 shadow-md">
+                {updatingProfile ? 'Updating...' : 'Update Details'}
+              </button>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

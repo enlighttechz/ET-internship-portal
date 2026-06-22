@@ -99,6 +99,7 @@ const AdminStudentManager = () => {
                   <td className="px-6 py-4">
                     <div className="font-bold text-on-surface text-base">{s.name}</div>
                     <div className="text-xs text-text-dim mt-0.5">{s.email}</div>
+                    <div className="text-xs font-bold text-primary mt-0.5">ID: {s.internId || 'N/A'}</div>
                     {s.lastLogin && <div className="text-[10px] text-primary/80 mt-1">Last Login: {new Date(s.lastLogin).toLocaleString()}</div>}
                     <div className="flex flex-wrap gap-1 mt-2">
                       <div className="text-[10px] font-bold text-primary uppercase tracking-widest bg-primary/10 px-2 py-0.5 rounded-full border border-primary/20" title="Primary Domain">{s.domain}</div>
@@ -108,9 +109,19 @@ const AdminStudentManager = () => {
                     </div>
                   </td>
                   <td className="px-6 py-4">
-                    <div className="flex items-center gap-2 mb-2">
-                      <BookOpen size={14} className="text-secondary" />
-                      <span className="font-bold bg-secondary/10 text-secondary px-2 py-0.5 rounded text-xs">Day {s.learningProgress}</span>
+                    <div className="flex flex-col gap-1 mb-2">
+                      <div className="flex items-center gap-2">
+                        <BookOpen size={14} className="text-secondary" />
+                        <span className="font-bold bg-secondary/10 text-secondary px-2 py-0.5 rounded text-xs">
+                          Days Completed: {Math.max(0, (s.learningProgress || 1) - 1)}
+                        </span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <BookOpen size={14} className="text-primary" />
+                        <span className="font-bold bg-primary/10 text-primary px-2 py-0.5 rounded text-xs">
+                          Modules Completed: {s.timeTracking?.length || 0}
+                        </span>
+                      </div>
                     </div>
                     <div className="flex items-center gap-2">
                       <Clock size={14} className="text-primary" />
@@ -195,6 +206,13 @@ const AdminStudentManager = () => {
                   </td>
                   <td className="px-6 py-4 text-right">
                     <div className="flex items-center justify-end gap-2">
+                      <button 
+                        onClick={() => navigate(`/admin/students/${s._id}`, { state: { student: s } })} 
+                        className="text-primary hover:text-white bg-primary/10 hover:bg-primary p-2.5 rounded-xl transition-colors border border-primary/20 hover:border-primary flex items-center gap-1.5 text-xs font-bold shadow-sm"
+                        title="View Full Details"
+                      >
+                        <BookOpen size={16} /> Details
+                      </button>
                       <button 
                         onClick={() => navigateToChat(s)} 
                         className="text-primary hover:text-white bg-primary/10 hover:bg-primary p-2.5 rounded-xl transition-colors border border-primary/20 hover:border-primary flex items-center gap-1.5 text-xs font-bold shadow-sm"

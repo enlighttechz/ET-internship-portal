@@ -12,6 +12,7 @@ const studentSchema = new mongoose.Schema({
     attendance: { type: Number, default: 0 },
     learningProgress: { type: Number, default: 0 },
     assessmentScore: { type: Number, default: null },
+    lastDayCompletedAt: { type: Date },
     paymentStatus: { type: String, enum: ['Pending', 'Paid'], default: 'Pending' }
   }],
   paymentStatus: { type: String, enum: ['Pending', 'Paid'], default: 'Pending' },
@@ -21,6 +22,7 @@ const studentSchema = new mongoose.Schema({
   finalProjectStatus: { type: String, enum: ['Pending', 'Submitted', 'Evaluated'], default: 'Pending' },
   finalProjectLink: { type: String, default: '' },
   learningProgress: { type: Number, default: 0 }, // Tracks which content index the student is on
+  lastDayCompletedAt: { type: Date },
   assessmentScore: { type: Number, default: null }, // Null if not taken
   certificateIssued: { type: Boolean, default: false }, // Admin controls this
   resetOtp: { type: String },
