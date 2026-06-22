@@ -1,10 +1,56 @@
 import React, { useState } from 'react';
 import { NavLink, Outlet } from 'react-router-dom';
-import { BookOpen, Users, Award, Bell, MessageSquare, Settings, Menu, X, Star } from 'lucide-react';
+import { BookOpen, Users, Award, Bell, MessageSquare, Settings, Menu, X, Star, Lock } from 'lucide-react';
 import ETLogo from '../../assets/ET.png';
 
 const AdminLayout = () => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [isAuthenticated, setIsAuthenticated] = useState(sessionStorage.getItem('admin_auth') === 'true');
+  const [password, setPassword] = useState('');
+  const [error, setError] = useState('');
+
+  const handleLogin = (e) => {
+    e.preventDefault();
+    if (password === 'Admin@ET1tern') {
+      setIsAuthenticated(true);
+      sessionStorage.setItem('admin_auth', 'true');
+    } else {
+      setError('Incorrect password');
+      setPassword('');
+    }
+  };
+
+  if (!isAuthenticated) {
+    return (
+      <div className="min-h-screen bg-surface-container-lowest flex items-center justify-center p-4 relative overflow-hidden">
+        <div className="absolute top-[-20%] left-[-10%] w-[50%] h-[50%] bg-primary/10 rounded-full blur-3xl"></div>
+        <div className="absolute bottom-[-20%] right-[-10%] w-[50%] h-[50%] bg-secondary/10 rounded-full blur-3xl"></div>
+        
+        <form onSubmit={handleLogin} className="glass-card bg-white p-8 rounded-3xl shadow-2xl border border-outline-variant/30 w-full max-w-sm animate-fade-in relative z-10 text-center">
+          <div className="w-16 h-16 bg-primary/10 text-primary rounded-full flex items-center justify-center mx-auto mb-6">
+            <Lock size={32} />
+          </div>
+          <h2 className="text-2xl font-bold text-on-surface mb-2 font-headline-md">Admin Portal</h2>
+          <p className="text-text-dim text-sm mb-6">Please enter the admin password to continue.</p>
+          
+          <input
+            type="password"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            className="w-full bg-surface-container border border-outline-variant/50 px-4 py-3 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all text-on-surface placeholder-text-dim mb-4"
+            placeholder="Password"
+            autoFocus
+          />
+          
+          {error && <p className="text-error text-xs mb-4 animate-shake">{error}</p>}
+          
+          <button type="submit" className="w-full bg-primary hover:bg-primary/90 text-white font-bold py-3 px-4 rounded-xl shadow-md transition-colors active:scale-95">
+            Access Dashboard
+          </button>
+        </form>
+      </div>
+    );
+  }
 
   const navLinks = [
     { name: 'Course Manager', path: '/admin/courses', icon: <BookOpen size={20} /> },

@@ -721,6 +721,16 @@ const CourseViewer = ({ token, student: initialStudent, logout }) => {
                     <div className="w-10 h-10 border-4 border-primary border-t-transparent rounded-full animate-spin mb-4"></div>
                     <p className="font-bold animate-pulse">Loading content...</p>
                   </div>
+                ) : isLockedByTime ? (
+                  <div className="flex flex-col items-center justify-center py-24 text-text-dim text-center animate-fade-in">
+                    <div className="w-24 h-24 bg-primary/10 rounded-full flex items-center justify-center mb-6 text-primary shadow-inner">
+                      <Lock size={48} />
+                    </div>
+                    <h2 className="text-3xl font-bold text-text-primary mb-4 font-headline-md">Day Locked</h2>
+                    <p className="max-w-md text-lg leading-relaxed">
+                      Great job completing your tasks! Your next day's content will automatically unlock in <strong className="text-primary">{timeRemaining}</strong>.
+                    </p>
+                  </div>
                 ) : currentItem ? (
                   <div className="glass-card bg-white p-6 md:p-10 rounded-3xl shadow-xl border border-outline-variant/30 animate-fade-in relative overflow-hidden">
                     {/* Decorative blobs */}
