@@ -14,6 +14,41 @@ import studyMusic from '../assets/alex-morgan-study-lofi-music-548638.mp3';
 
 const API_URL = `${import.meta.env.VITE_API_BASE}/api`;
 
+const ImageCarousel = ({ images, title }) => {
+  const [currentIndex, setCurrentIndex] = useState(0);
+
+  if (!images || images.length === 0) return null;
+  if (images.length === 1) {
+    return <img src={images[0]} alt={title} loading="lazy" className="w-full rounded-2xl shadow-lg border border-outline-variant/20 mb-8 max-w-full h-auto" />;
+  }
+
+  const nextImage = () => setCurrentIndex((prev) => (prev + 1) % images.length);
+  const prevImage = () => setCurrentIndex((prev) => (prev - 1 + images.length) % images.length);
+
+  return (
+    <div className="relative w-full rounded-2xl overflow-hidden shadow-lg border border-outline-variant/20 mb-8 bg-black flex items-center justify-center min-h-[300px]">
+      <img src={images[currentIndex]} alt={`${title} ${currentIndex + 1}`} loading="lazy" className="max-w-full max-h-[70vh] object-contain" />
+      
+      <button onClick={prevImage} className="absolute left-2 top-1/2 -translate-y-1/2 bg-black/50 text-white p-2 rounded-full hover:bg-black/80 transition-colors">
+        <ChevronLeft size={24} />
+      </button>
+      <button onClick={nextImage} className="absolute right-2 top-1/2 -translate-y-1/2 bg-black/50 text-white p-2 rounded-full hover:bg-black/80 transition-colors">
+        <ChevronRight size={24} />
+      </button>
+      
+      <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex gap-2">
+        {images.map((_, idx) => (
+          <button 
+            key={idx} 
+            onClick={() => setCurrentIndex(idx)}
+            className={`w-2.5 h-2.5 rounded-full transition-colors ${idx === currentIndex ? 'bg-white' : 'bg-white/50 hover:bg-white/80'}`}
+          />
+        ))}
+      </div>
+    </div>
+  );
+};
+
 const CourseViewer = ({ token, student: initialStudent, logout }) => {
   const [student, setStudent] = useState(initialStudent);
   const [courseDays, setCourseDays] = useState([]);
@@ -113,7 +148,7 @@ const CourseViewer = ({ token, student: initialStudent, logout }) => {
 
   useEffect(() => {
     if (audioRef.current) {
-      audioRef.current.volume = 0.15;
+      audioRef.current.volume = 0.5;
       if (bgmPlaying) {
         const playPromise = audioRef.current.play();
         if (playPromise !== undefined) {
@@ -165,17 +200,26 @@ const CourseViewer = ({ token, student: initialStudent, logout }) => {
   const [isPaused, setIsPaused] = useState(false);
 
   const contentAreaRef = useRef(null);
+  const trackerRef = useRef(null);
 
   useEffect(() => {
     setStudentAnswer('');
     setAiEvaluation(null);
     setIsEvaluating(false);
-    if (contentAreaRef.current) {
-      contentAreaRef.current.scrollTo({ top: 0, behavior: 'smooth' });
-    }
+    setTimeout(() => {
+      if (contentAreaRef.current && trackerRef.current) {
+        contentAreaRef.current.scrollTo({
+          top: trackerRef.current.offsetTop,
+          behavior: 'smooth'
+        });
+      } else if (contentAreaRef.current) {
+        contentAreaRef.current.scrollTo({ top: 0, behavior: 'smooth' });
+      }
+    }, 50);
   }, [activeItemIndex, activeDayIndex]);
   
   const [sidebarOpen, setSidebarOpen] = useState(window.innerWidth > 768);
+  const [sidebarMinimized, setSidebarMinimized] = useState(false);
   const [recommendationInboxOpen, setRecommendationInboxOpen] = useState(false);
   const [recommendations, setRecommendations] = useState([]);
   const [isCourseShuttered, setIsCourseShuttered] = useState(false);
@@ -512,22 +556,28 @@ const CourseViewer = ({ token, student: initialStudent, logout }) => {
     <div className="bg-background text-on-surface font-body-md flex h-screen overflow-hidden">
       
       {/* Left Sidebar */}
-      <nav className={`fixed md:sticky inset-y-0 left-0 w-64 bg-surface/90 backdrop-blur-xl border-r border-outline-variant/30 shadow-2xl flex flex-col z-50 transition-transform duration-300 ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'} md:translate-x-0`}>
-        <div className="p-4 border-b border-outline-variant/30 flex items-center justify-between">
-          <div className="flex items-center gap-2 cursor-pointer" onClick={() => navigate('/')}>
-            <img src={ETLogo} alt="Logo" className="w-8 h-8 drop-shadow-md" />
-            <span className="font-bold text-lg text-primary">Enlight Techz</span>
-          </div>
-          <button onClick={() => setSidebarOpen(false)} className="md:hidden"><X size={20}/></button>
+      <nav className={`fixed md:sticky inset-y-0 left-0 ${sidebarMinimized ? 'w-20' : 'w-64'} bg-surface/90 backdrop-blur-xl border-r border-outline-variant/30 shadow-2xl flex flex-col z-50 transition-all duration-300 ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'} md:translate-x-0`}>
+        <div className={`p-4 border-b border-outline-variant/30 flex items-center ${sidebarMinimized ? 'justify-center' : 'justify-between'}`}>
+          {!sidebarMinimized && (
+            <div className="flex items-center gap-2 cursor-pointer" onClick={() => navigate('/')}>
+              <img src={ETLogo} alt="Logo" className="w-8 h-8 drop-shadow-md shrink-0" />
+              <span className="font-bold text-lg text-primary truncate">Enlight Techz</span>
+            </div>
+          )}
+          <button onClick={() => setSidebarMinimized(!sidebarMinimized)} className="hidden md:block text-text-dim hover:text-primary shrink-0" title="Toggle Sidebar">
+            <Menu size={sidebarMinimized ? 24 : 20} />
+          </button>
+          <button onClick={() => setSidebarOpen(false)} className="md:hidden shrink-0"><X size={20}/></button>
         </div>
 
-        <div className="flex-1 overflow-y-auto p-4 space-y-4">
-          <button onClick={() => navigate('/dashboard')} className="w-full flex items-center gap-3 p-3 rounded-xl bg-surface-container hover:bg-primary/10 hover:text-primary transition-colors text-sm font-bold text-text-dim">
-            <Home size={18} /> Dashboard
+        <div className="flex-1 overflow-y-auto p-4 space-y-4 custom-scrollbar">
+          <button onClick={() => navigate('/dashboard')} className={`w-full flex items-center gap-3 p-3 rounded-xl bg-surface-container hover:bg-primary/10 hover:text-primary transition-colors text-sm font-bold text-text-dim ${sidebarMinimized ? 'justify-center' : ''}`} title={sidebarMinimized ? "Dashboard" : ""}>
+            <Home size={18} className="shrink-0" /> 
+            {!sidebarMinimized && <span>Dashboard</span>}
           </button>
 
           <div className="pt-4 border-t border-outline-variant/30">
-            <h4 className="text-xs uppercase tracking-wider font-bold text-text-dim mb-3">Course Roadmap</h4>
+            {!sidebarMinimized && <h4 className="text-xs uppercase tracking-wider font-bold text-text-dim mb-3">Course Roadmap</h4>}
             {courseDays.map((day, idx) => {
               const isFutureDay = day.dayNumber > (courseData?.learningProgress || 1);
               const isNextDayLockedByTime = isLockedByTime && day.dayNumber === (courseData?.learningProgress || 1);
@@ -540,20 +590,19 @@ const CourseViewer = ({ token, student: initialStudent, logout }) => {
                   onClick={() => {
                     if (!isLocked) {
                       setActiveDayIndex(idx);
-                      // Don't forcefully set activeItemIndex(0) if it's a completed day, maybe they left off at some point, or let's default to 0. 
-                      // The prompt says "don't reopen it from scratch". We can default to 0 for simplicity or just let it stay at what it was if they navigate back. But to be safe, if we don't reset, it might be out of bounds if the day has fewer items. Let's just set to 0. The key is "remove locking".
                       setActiveItemIndex(0);
                       if(window.innerWidth < 768) setSidebarOpen(false);
                     }
                   }}
                   disabled={isLocked}
+                  title={sidebarMinimized ? `Day ${day.dayNumber}: ${day.title}` : ""}
                   className={`w-full flex flex-col text-left p-3 rounded-xl mb-2 transition-all ${isActive ? 'bg-primary text-white shadow-lg shadow-primary/20 scale-[1.02]' : isLocked ? 'opacity-50 cursor-not-allowed text-text-dim bg-surface-container-highest/20 pointer-events-none' : 'bg-surface-container hover:bg-surface-container-high text-text-primary'}`}
                 >
-                  <div className="flex items-center gap-2 mb-1">
-                    {isLocked ? <Lock size={14} /> : isCompleted && !isActive ? <CheckCircle size={14} className="text-success" /> : <PlayCircle size={14} />}
-                    <span className="font-bold text-sm">Day {day.dayNumber}</span>
+                  <div className={`flex items-center gap-2 ${sidebarMinimized ? 'justify-center w-full' : 'mb-1'}`}>
+                    {isLocked ? <Lock size={14} className="shrink-0" /> : isCompleted && !isActive ? <CheckCircle size={14} className="text-success shrink-0" /> : <PlayCircle size={14} className="shrink-0" />}
+                    {!sidebarMinimized && <span className="font-bold text-sm">Day {day.dayNumber}</span>}
                   </div>
-                  <span className={`text-xs truncate ${isActive ? 'text-white/80' : 'text-text-dim'}`}>{day.title}</span>
+                  {!sidebarMinimized && <span className={`text-xs truncate w-full ${isActive ? 'text-white/80' : 'text-text-dim'}`}>{day.title}</span>}
                 </button>
               );
             })}
@@ -561,113 +610,101 @@ const CourseViewer = ({ token, student: initialStudent, logout }) => {
         </div>
 
         <div className="p-4 border-t border-outline-variant/30">
-          <button onClick={() => setRecommendationInboxOpen(true)} className="w-full flex items-center justify-between p-3 rounded-xl bg-accent/10 hover:bg-accent/20 transition-colors text-accent font-bold text-sm mb-3 relative">
-            <div className="flex items-center gap-2"><Inbox size={18} /> Inbox</div>
-            {unreadCount > 0 && <span className="bg-error text-white text-[10px] px-2 py-0.5 rounded-full">{unreadCount} New</span>}
+          <button onClick={() => setRecommendationInboxOpen(true)} className={`w-full flex items-center p-3 rounded-xl bg-accent/10 hover:bg-accent/20 transition-colors text-accent font-bold text-sm mb-3 relative ${sidebarMinimized ? 'justify-center' : 'justify-between'}`} title={sidebarMinimized ? "Inbox" : ""}>
+            <div className={`flex items-center gap-2 ${sidebarMinimized ? 'justify-center' : ''}`}>
+              <Inbox size={18} className="shrink-0" /> 
+              {!sidebarMinimized && <span>Inbox</span>}
+            </div>
+            {unreadCount > 0 && <span className={`bg-error text-white text-[10px] px-2 py-0.5 rounded-full ${sidebarMinimized ? 'absolute -top-1 -right-1' : ''}`}>{unreadCount} {sidebarMinimized ? '' : 'New'}</span>}
           </button>
-          <button onClick={logout} className="w-full text-center p-3 text-sm font-bold text-error border border-error/30 rounded-xl hover:bg-error/10">
-            Log Out
+          <button onClick={logout} className={`w-full text-center p-3 text-sm font-bold text-error border border-error/30 rounded-xl hover:bg-error/10 ${sidebarMinimized ? 'flex justify-center' : ''}`} title={sidebarMinimized ? "Log Out" : ""}>
+            {sidebarMinimized ? <X size={18} /> : 'Log Out'}
           </button>
         </div>
+        
       </nav>
 
       {/* Main Content */}
-      <main className="flex-1 flex flex-col h-full relative overflow-hidden bg-surface-container-lowest">
+      {/* Main Content */}
+      <main ref={contentAreaRef} className="flex-1 flex flex-col h-full relative overflow-y-auto overflow-x-hidden bg-surface-container-lowest custom-scrollbar">
         <audio ref={audioRef} src={studyMusic} loop autoPlay={bgmPlaying} />
         
-        {/* Desktop Header */}
-        <header className="hidden md:flex items-center justify-between p-5 bg-surface border-b border-outline-variant/30 z-40 shrink-0">
-          <h1 className="font-headline-md text-2xl font-bold text-primary">{activeDomain}</h1>
-          <div className="flex items-center gap-6">
-            <button 
-              id="btn-bgm"
-              onClick={() => setBgmPlaying(!bgmPlaying)}
-              className={`p-2 rounded-full transition-colors flex items-center gap-2 ${bgmPlaying ? 'bg-primary text-white shadow-lg' : 'bg-surface-container text-text-dim hover:text-primary hover:bg-primary/10'} ${showTutorial && tutorialStep === 1 ? 'relative z-[70] ring-4 ring-primary bg-white shadow-2xl scale-125' : ''}`}
-              title="Study Music"
-            >
-              <Music size={20} />
-            </button>
-            {gamificationData && student && (
-              <GameficationUI studentId={student._id} allStudents={[student]} />
-            )}
-          </div>
-        </header>
 
-        {/* Mobile Header */}
-        <header className="md:hidden flex flex-col p-4 bg-surface border-b border-outline-variant/30 z-40 shrink-0 gap-3">
-          <div className="flex items-center justify-between w-full">
-            <div className="flex items-center gap-3 overflow-hidden flex-1">
-              <button onClick={() => setSidebarOpen(true)} className="shrink-0 p-1 bg-primary/10 rounded-lg"><Menu size={24} className="text-primary" /></button>
-              <h1 className="font-bold text-primary text-lg truncate flex-1">{activeDomain}</h1>
-            </div>
-            <button 
-              id="btn-bgm-mobile"
-              onClick={() => setBgmPlaying(!bgmPlaying)}
-              className={`p-2 rounded-full transition-colors flex items-center gap-2 ml-2 shrink-0 ${bgmPlaying ? 'bg-primary text-white shadow-md' : 'bg-surface-container text-text-dim'}`}
-              title="Study Music"
-            >
-              <Music size={18} />
-            </button>
-          </div>
-          <div className="flex items-center justify-between gap-2 overflow-x-auto pb-1 no-scrollbar w-full">
-            {gamificationData && student && (
-              <div className="shrink-0">
-                <GameficationUI studentId={student._id} allStudents={[student]} />
-              </div>
-            )}
-          </div>
-        </header>
-
-        {timeRemaining && !isCourseShuttered && (
-          <div className="bg-primary/10 text-primary px-4 py-3 text-center text-sm font-bold flex items-center justify-center gap-2 shrink-0 z-40 border-b border-primary/20 animate-fade-in shadow-sm">
-            <Clock size={18} />
-            Great job today! Your next day will unlock in {timeRemaining}.
-          </div>
-        )}
-
-        {isCourseShuttered ? (
-          <div className="flex-1 flex items-center justify-center p-8 bg-surface-container-lowest relative z-50">
-            <div className="text-center max-w-lg bg-surface p-10 rounded-3xl shadow-2xl border border-outline-variant/30">
-              <div className="w-24 h-24 bg-error/10 rounded-full flex items-center justify-center mx-auto mb-6 text-error">
-                <Lock size={48} />
-              </div>
-              <h2 className="text-3xl font-bold text-on-surface mb-4">Course Temporarily Locked</h2>
-              <p className="text-text-dim text-lg mb-8 leading-relaxed whitespace-pre-wrap">
-                {shutterNote ? shutterNote : (
-                  <>
-                    The course content is currently closed for maintenance or scheduled downtime. <br/>
-                    <strong>Please visit this course after 1 hour.</strong>
-                  </>
-                )}
-              </p>
+          {/* Desktop Header */}
+          <header className="hidden md:flex items-center justify-between p-5 bg-surface border-b border-outline-variant/30 shrink-0">
+            <h1 className="font-headline-md text-2xl font-bold text-primary">{activeDomain}</h1>
+            <div className="flex items-center gap-6">
               <button 
-                onClick={() => navigate('/dashboard')}
-                className="bg-primary text-white font-bold px-8 py-3 rounded-xl shadow-md hover:bg-primary/90 transition-colors"
+                id="btn-bgm"
+                onClick={() => setBgmPlaying(!bgmPlaying)}
+                className={`p-2 rounded-full transition-colors flex items-center gap-2 ${bgmPlaying ? 'bg-primary text-white shadow-lg' : 'bg-surface-container text-text-dim hover:text-primary hover:bg-primary/10'} ${showTutorial && tutorialStep === 1 ? 'relative z-[70] ring-4 ring-primary bg-white shadow-2xl scale-125' : ''}`}
+                title="Study Music"
               >
-                Return to Dashboard
+                <Music size={20} />
+              </button>
+              {gamificationData && student && (
+                <GameficationUI studentId={student._id} allStudents={[student]} />
+              )}
+            </div>
+          </header>
+
+          {/* Mobile Header */}
+          <header className="md:hidden flex flex-col p-4 bg-surface border-b border-outline-variant/30 shrink-0 gap-3">
+            <div className="flex items-center justify-between w-full">
+              <div className="flex items-center gap-3 overflow-hidden flex-1">
+                <button onClick={() => setSidebarOpen(true)} className="shrink-0 p-1 bg-primary/10 rounded-lg"><Menu size={24} className="text-primary" /></button>
+                <h1 className="font-bold text-primary text-lg truncate flex-1">{activeDomain}</h1>
+              </div>
+              <button 
+                id="btn-bgm-mobile"
+                onClick={() => setBgmPlaying(!bgmPlaying)}
+                className={`p-2 rounded-full transition-colors flex items-center gap-2 ml-2 shrink-0 ${bgmPlaying ? 'bg-primary text-white shadow-md' : 'bg-surface-container text-text-dim'}`}
+                title="Study Music"
+              >
+                <Music size={18} />
               </button>
             </div>
+            <div className="flex items-center justify-between gap-2 overflow-x-auto pb-1 no-scrollbar w-full">
+              {gamificationData && student && (
+                <div className="shrink-0">
+                  <GameficationUI studentId={student._id} allStudents={[student]} />
+                </div>
+              )}
+            </div>
+          </header>
+
+          {/* Banners (Not Sticky) */}
+          <div className="flex flex-col">
+            {timeRemaining && !isCourseShuttered && (
+            <div className="bg-primary/10 text-primary px-4 py-3 text-center text-sm font-bold flex items-center justify-center gap-2 shrink-0 border-b border-primary/20 animate-fade-in shadow-sm">
+              <Clock size={18} />
+              Great job today! Your next day will unlock in {timeRemaining}.
+            </div>
+          )}
+
+          {!isCourseShuttered && currentDay && courseData?.learningProgress > currentDay.dayNumber && (
+            <div className="bg-success text-white px-4 py-2 text-center text-sm font-bold flex items-center justify-center gap-2 shrink-0">
+              <CheckCircle size={16} />
+              You have already completed this day. You are currently in review mode.
+              <button 
+                onClick={() => {
+                  const progress = courseData?.learningProgress || 1;
+                  setActiveDayIndex(Math.max(0, progress - 1));
+                  setActiveItemIndex(0);
+                }}
+                className="ml-4 underline hover:text-white/80"
+              >
+                Return to Current Day
+              </button>
+            </div>
+          )}
+
           </div>
-        ) : currentDay ? (
-          <div className="flex-1 flex flex-col overflow-hidden relative">
-            {courseData?.learningProgress > currentDay.dayNumber && (
-              <div className="bg-success text-white px-4 py-2 text-center text-sm font-bold flex items-center justify-center gap-2 shrink-0 z-50">
-                <CheckCircle size={16} />
-                You have already completed this day. You are currently in review mode.
-                <button 
-                  onClick={() => {
-                    const progress = courseData?.learningProgress || 1;
-                    setActiveDayIndex(Math.max(0, progress - 1));
-                    setActiveItemIndex(0);
-                  }}
-                  className="ml-4 underline hover:text-white/80"
-                >
-                  Return to Current Day
-                </button>
-              </div>
-            )}
-            {/* Horizontal Day Tracker */}
-            <div className="bg-surface shadow-sm border-b border-outline-variant/30 px-4 md:px-8 py-4 z-10 flex-none">
+
+          {/* Sticky Tracker */}
+          <div ref={trackerRef} className="sticky top-0 z-40 flex flex-col shadow-sm">
+            {!isCourseShuttered && currentDay && (
+            <div className="bg-surface shadow-sm border-b border-outline-variant/30 px-4 md:px-8 py-4 flex-none">
               <h2 className="font-bold text-xl md:text-2xl mb-4 text-on-surface flex items-center gap-3">
                 <span className="bg-primary text-white text-sm px-3 py-1 rounded-full">Day {currentDay.dayNumber}</span>
                 {currentDay.title}
@@ -712,10 +749,36 @@ const CourseViewer = ({ token, student: initialStudent, logout }) => {
                 </div>
               </div>
             </div>
+          )}
+        </div>
 
-            {/* Content Area */}
-            <div ref={contentAreaRef} className="flex-1 overflow-y-auto p-4 md:p-8 custom-scrollbar relative">
-              <div className="max-w-4xl mx-auto pb-20">
+        {isCourseShuttered ? (
+          <div className="flex-1 flex items-center justify-center p-8 bg-surface-container-lowest relative z-30">
+            <div className="text-center max-w-lg bg-surface p-10 rounded-3xl shadow-2xl border border-outline-variant/30">
+              <div className="w-24 h-24 bg-error/10 rounded-full flex items-center justify-center mx-auto mb-6 text-error">
+                <Lock size={48} />
+              </div>
+              <h2 className="text-3xl font-bold text-on-surface mb-4">Course Temporarily Locked</h2>
+              <p className="text-text-dim text-lg mb-8 leading-relaxed whitespace-pre-wrap">
+                {shutterNote ? shutterNote : (
+                  <>
+                    The course content is currently closed for maintenance or scheduled downtime. <br/>
+                    <strong>Please visit this course after 1 hour.</strong>
+                  </>
+                )}
+              </p>
+              <button 
+                onClick={() => navigate('/dashboard')}
+                className="bg-primary text-white font-bold px-8 py-3 rounded-xl shadow-md hover:bg-primary/90 transition-colors"
+              >
+                Return to Dashboard
+              </button>
+            </div>
+          </div>
+        ) : currentDay ? (
+          <div className="flex-1 flex flex-col relative">
+            <div className="p-4 md:p-8 relative">
+              <div className="max-w-6xl mx-auto pb-20">
                 {dayLoading ? (
                   <div className="flex flex-col items-center justify-center py-20 text-text-dim">
                     <div className="w-10 h-10 border-4 border-primary border-t-transparent rounded-full animate-spin mb-4"></div>
@@ -793,9 +856,12 @@ const CourseViewer = ({ token, student: initialStudent, logout }) => {
                              <iframe src={currentItem.videoUrl} className="w-full h-full" allowFullScreen loading="lazy"></iframe>
                            </div>
                         ) : currentItem.contentType === 'image' ? (
-                           <img src={currentItem.imageUrl} alt={currentItem.title} loading="lazy" className="w-full rounded-2xl shadow-lg border border-outline-variant/20 mb-8" />
+                           <ImageCarousel 
+                             images={currentItem.imageUrl?.split(',').map(url => url.trim()).filter(Boolean)} 
+                             title={currentItem.title} 
+                           />
                         ) : (
-                           <div dangerouslySetInnerHTML={{ __html: currentItem.body?.replace(/<img /g, '<img loading="lazy" ') }} />
+                           <div dangerouslySetInnerHTML={{ __html: currentItem.body?.replace(/<img /g, '<img loading="lazy" style="max-width: 100%; height: auto;" ') }} />
                         )}
                       </div>
                     ) : currentItem.itemType === 'assessment' ? (
@@ -806,24 +872,45 @@ const CourseViewer = ({ token, student: initialStudent, logout }) => {
                             <p className="text-text-dim">Test your understanding of today's topics before moving forward.</p>
                           </div>
                         </div>
-                        {currentItem.formUrl ? (
-                          <div className="w-full relative rounded-2xl overflow-hidden border border-outline-variant/30 mb-8 h-[600px] bg-white">
-                            <iframe src={currentItem.formUrl} width="100%" height="100%" frameBorder="0" marginHeight="0" marginWidth="0">Loading…</iframe>
+
+                        {currentItem.questions && currentItem.questions.length > 0 ? (
+                          <div className="mb-8">
+                            {submittedAssessments[currentItem._id] ? (
+                              <div className="bg-success/10 border border-success/30 p-8 rounded-2xl text-center">
+                                <div className="w-16 h-16 bg-success text-white rounded-full flex items-center justify-center mx-auto mb-4"><CheckCircle size={32} /></div>
+                                <h3 className="text-xl font-bold text-success mb-2">Assessment Completed!</h3>
+                                <p className="text-text-dim">You have successfully submitted your answers.</p>
+                              </div>
+                            ) : (
+                              <Assessment 
+                                assessment={currentItem} 
+                                onSubmit={(answers) => {
+                                  // In a real app we'd validate answers, here we just mark it complete
+                                  handleSubmitAssessment();
+                                }} 
+                              />
+                            )}
                           </div>
+                        ) : currentItem.formUrl ? (
+                          <>
+                            <div className="w-full relative rounded-2xl overflow-hidden border border-outline-variant/30 mb-8 h-[600px] bg-white">
+                              <iframe src={currentItem.formUrl} width="100%" height="100%" frameBorder="0" marginHeight="0" marginWidth="0">Loading…</iframe>
+                            </div>
+                            <div className="text-center">
+                              <button 
+                                disabled={submittedAssessments[currentItem._id]}
+                                onClick={handleSubmitAssessment} 
+                                className={`px-8 py-3 font-bold rounded-xl shadow-md transition-colors ${submittedAssessments[currentItem._id] ? 'bg-surface-container-highest text-text-dim cursor-not-allowed' : 'bg-success text-white hover:bg-success/90'}`}
+                              >
+                                {submittedAssessments[currentItem._id] ? 'Submitted' : 'Mark Assessment as Completed'}
+                              </button>
+                            </div>
+                          </>
                         ) : (
                           <div className="p-8 text-center border-2 border-dashed border-outline-variant rounded-2xl mb-8">
-                            <p className="text-text-dim italic">Assessment link is not configured for this module.</p>
+                            <p className="text-text-dim italic">Assessment link or questions are not configured for this module.</p>
                           </div>
                         )}
-                        <div className="text-center">
-                          <button 
-                            disabled={submittedAssessments[currentItem._id]}
-                            onClick={handleSubmitAssessment} 
-                            className={`px-8 py-3 font-bold rounded-xl shadow-md transition-colors ${submittedAssessments[currentItem._id] ? 'bg-surface-container-highest text-text-dim cursor-not-allowed' : 'bg-success text-white hover:bg-success/90'}`}
-                          >
-                            {submittedAssessments[currentItem._id] ? 'Submitted' : 'Mark Assessment as Completed'}
-                          </button>
-                        </div>
                       </div>
                     ) : (
                       <div className="ai-qa-container max-w-2xl mx-auto">

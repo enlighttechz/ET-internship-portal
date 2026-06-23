@@ -120,7 +120,7 @@ const DayEditor = ({ day, onRefresh }) => {
   const [items, setItems] = useState(day.items || []);
   const [isAddingItem, setIsAddingItem] = useState(false);
   const [newItemType, setNewItemType] = useState('content');
-  const [newItemContentForm, setNewItemContentForm] = useState({ title: '', contentType: 'text', body: '', videoUrl: '', imageUrl: '', formUrl: '', question: '', expectedAnswer: '' });
+  const [newItemContentForm, setNewItemContentForm] = useState({ title: '', contentType: 'text', body: '', videoUrl: '', imageUrl: '', formUrl: '', question: '', expectedAnswer: '', questions: [] });
   const [editingItemIdx, setEditingItemIdx] = useState(null);
   
   const [isEditingDay, setIsEditingDay] = useState(false);
@@ -179,7 +179,8 @@ const DayEditor = ({ day, onRefresh }) => {
       imageUrl: item.imageUrl || '',
       formUrl: item.formUrl || '',
       question: item.question || '',
-      expectedAnswer: item.expectedAnswer || ''
+      expectedAnswer: item.expectedAnswer || '',
+      questions: item.questions || []
     });
     setIsAddingItem(true);
   };
@@ -200,7 +201,7 @@ const DayEditor = ({ day, onRefresh }) => {
       newItem.question = newItemContentForm.question;
       newItem.expectedAnswer = newItemContentForm.expectedAnswer;
     } else {
-      newItem.formUrl = newItemContentForm.formUrl; // Google Form Embed URL
+      newItem.questions = newItemContentForm.questions;
     }
 
     let newItems;
@@ -216,7 +217,7 @@ const DayEditor = ({ day, onRefresh }) => {
     setEditingItemIdx(null);
     try {
       await axios.put(`${API_URL}/course-days/${day._id}`, { items: newItems });
-      setNewItemContentForm({ title: '', contentType: 'text', body: '', videoUrl: '', imageUrl: '', formUrl: '', question: '', expectedAnswer: '' });
+      setNewItemContentForm({ title: '', contentType: 'text', body: '', videoUrl: '', imageUrl: '', formUrl: '', question: '', expectedAnswer: '', questions: [] });
     } catch (err) {
       alert("Failed to add item: " + err.message);
     }
@@ -390,17 +391,55 @@ const DayEditor = ({ day, onRefresh }) => {
                   <input type="text" placeholder="Video Embed URL" value={newItemContentForm.videoUrl} onChange={e => setNewItemContentForm({...newItemContentForm, videoUrl: e.target.value})} className="w-full p-2 rounded-md border text-sm" required />
                 )}
                 {newItemContentForm.contentType === 'image' && (
-                  <input type="text" placeholder="Image URL" value={newItemContentForm.imageUrl} onChange={e => setNewItemContentForm({...newItemContentForm, imageUrl: e.target.value})} className="w-full p-2 rounded-md border text-sm" required />
+                  <input type="text" placeholder="Image URL (Comma separate for multiple images to create a carousel)" value={newItemContentForm.imageUrl} onChange={e => setNewItemContentForm({...newItemContentForm, imageUrl: e.target.value})} className="w-full p-2 rounded-md border text-sm" required />
                 )}
               </div>
             )}
 
             {newItemType === 'assessment' && (
-              <div className="space-y-3">
-                <input type="text" placeholder="Google Form Embed URL (src link)" value={newItemContentForm.formUrl || ''} onChange={e => setNewItemContentForm({...newItemContentForm, formUrl: e.target.value})} className="w-full p-2 rounded-md border text-sm" required />
-                <p className="text-xs text-text-dim italic">
-                  Paste the Google Form URL here. Students will take the assessment inside the platform via this embedded form.
-                </p>
+              <div className="space-y-4">
+                <input type="text" placeholder="Assessment Title (e.g., Module 1 Quiz)" value={newItemContentForm.title} onChange={e => setNewItemContentForm({...newItemContentForm, title: e.target.value})} className="w-full p-2 rounded-md border text-sm font-bold" required />
+                
+                <div className="bg-surface-container p-3 rounded-lg border border-outline-variant/30 space-y-3">
+                  <h6 className="font-bold text-sm text-text-primary">Questions ({newItemContentForm.questions.length})</h6>
+                  {newItemContentForm.questions.map((q, qIdx) => (
+                    <div key={qIdx} className="bg-surface p-3 rounded-md border border-outline-variant shadow-sm relative pr-10">
+                      <p className="text-sm font-bold"><span className="text-primary mr-1">Q{qIdx + 1}.</span> {q.questionText}</p>
+                      <span className="text-xs text-text-dim uppercase tracking-wider font-bold block mb-2">{q.type === 'mcq' ? 'Multiple Choice' : q.type === 'msq' ? 'Multiple Select' : 'Text Answer'}</span>
+                      
+                      {(q.type === 'mcq' || q.type === 'msq') && (
+                        <div className="grid grid-cols-2 gap-2 mt-2">
+                          {q.options.map((opt, oIdx) => (
+                            <div key={oIdx} className={`text-xs p-1.5 rounded border ${((q.type === 'mcq' && q.correctAnswerIndex === oIdx) || (q.type === 'msq' && q.correctAnswers.includes(oIdx))) ? 'bg-success/10 border-success/30 text-success font-bold' : 'bg-surface-container border-transparent'}`}>
+                              {opt}
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                      {q.type === 'text_input' && (
+                        <div className="mt-2 text-xs text-success bg-success/10 p-2 rounded border border-success/20">
+                          <strong>Expected Answer:</strong> {q.expectedTextAnswer}
+                        </div>
+                      )}
+                      
+                      <button type="button" onClick={() => {
+                        const newQs = [...newItemContentForm.questions];
+                        newQs.splice(qIdx, 1);
+                        setNewItemContentForm({...newItemContentForm, questions: newQs});
+                      }} className="absolute top-3 right-3 text-error/70 hover:text-error bg-error/10 hover:bg-error/20 p-1.5 rounded-md transition-colors">
+                        <Trash2 size={14} />
+                      </button>
+                    </div>
+                  ))}
+
+                  {/* Add New Question Form Inline */}
+                  <div className="bg-surface-container-highest p-3 rounded-md border border-outline-variant border-dashed">
+                    <p className="text-xs font-bold uppercase tracking-wider text-text-dim mb-2 flex items-center gap-1"><Plus size={14}/> Add Question</p>
+                    <AssessmentQuestionBuilder onAdd={(newQ) => {
+                      setNewItemContentForm({...newItemContentForm, questions: [...newItemContentForm.questions, newQ]});
+                    }} />
+                  </div>
+                </div>
               </div>
             )}
 
@@ -433,6 +472,98 @@ const DayEditor = ({ day, onRefresh }) => {
           </button>
         )}
       </div>
+    </div>
+  );
+};
+
+// Sub-component for adding a single question to the assessment
+const AssessmentQuestionBuilder = ({ onAdd }) => {
+  const [qType, setQType] = useState('mcq');
+  const [qText, setQText] = useState('');
+  const [options, setOptions] = useState(['', '', '', '']);
+  const [mcqCorrect, setMcqCorrect] = useState(0);
+  const [msqCorrect, setMsqCorrect] = useState([0]);
+  const [textExpected, setTextExpected] = useState('');
+
+  const handleAdd = () => {
+    if (!qText.trim()) return alert("Enter question text");
+    
+    let newQ = { type: qType, questionText: qText };
+    
+    if (qType === 'mcq') {
+      if (options.some(o => !o.trim())) return alert("Fill all options");
+      newQ.options = options;
+      newQ.correctAnswerIndex = Number(mcqCorrect);
+    } else if (qType === 'msq') {
+      if (options.some(o => !o.trim())) return alert("Fill all options");
+      if (msqCorrect.length === 0) return alert("Select at least one correct option");
+      newQ.options = options;
+      newQ.correctAnswers = msqCorrect;
+    } else if (qType === 'text_input') {
+      if (!textExpected.trim()) return alert("Enter expected answer text");
+      newQ.expectedTextAnswer = textExpected;
+    }
+
+    onAdd(newQ);
+    // Reset form
+    setQText('');
+    setOptions(['', '', '', '']);
+    setMcqCorrect(0);
+    setMsqCorrect([0]);
+    setTextExpected('');
+  };
+
+  const toggleMsq = (idx) => {
+    if (msqCorrect.includes(idx)) {
+      setMsqCorrect(msqCorrect.filter(i => i !== idx));
+    } else {
+      setMsqCorrect([...msqCorrect, idx]);
+    }
+  };
+
+  return (
+    <div className="space-y-3">
+      <div className="flex gap-2">
+        <select value={qType} onChange={e => setQType(e.target.value)} className="p-2 rounded text-sm border bg-surface outline-none focus:border-primary">
+          <option value="mcq">Single Choice (MCQ)</option>
+          <option value="msq">Multiple Select (MSQ)</option>
+          <option value="text_input">Text Answer</option>
+        </select>
+        <input type="text" placeholder="Question Text..." value={qText} onChange={e => setQText(e.target.value)} className="flex-1 p-2 rounded text-sm border bg-surface outline-none focus:border-primary" />
+      </div>
+
+      {(qType === 'mcq' || qType === 'msq') && (
+        <div className="grid grid-cols-2 gap-2">
+          {options.map((opt, idx) => (
+            <div key={idx} className="flex items-center gap-2">
+              {qType === 'mcq' ? (
+                <input type="radio" name="mcq_correct" checked={mcqCorrect === idx} onChange={() => setMcqCorrect(idx)} className="accent-primary" />
+              ) : (
+                <input type="checkbox" checked={msqCorrect.includes(idx)} onChange={() => toggleMsq(idx)} className="accent-primary" />
+              )}
+              <input type="text" placeholder={`Option ${idx + 1}`} value={opt} onChange={e => {
+                const newOpts = [...options];
+                newOpts[idx] = e.target.value;
+                setOptions(newOpts);
+              }} className="flex-1 p-1.5 rounded text-xs border bg-surface outline-none focus:border-primary" />
+            </div>
+          ))}
+        </div>
+      )}
+
+      {qType === 'text_input' && (
+        <textarea 
+          placeholder="Expected Answer (keywords or phrases)..." 
+          value={textExpected} 
+          onChange={e => setTextExpected(e.target.value)} 
+          className="w-full p-2 rounded text-sm border bg-surface outline-none focus:border-primary" 
+          rows="2"
+        />
+      )}
+
+      <button type="button" onClick={handleAdd} className="w-full bg-surface text-primary border border-primary/30 hover:bg-primary hover:text-white px-3 py-1.5 rounded-md text-sm font-bold transition-colors">
+        Add Question to Assessment
+      </button>
     </div>
   );
 };

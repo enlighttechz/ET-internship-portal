@@ -9,13 +9,31 @@ const Assessment = ({ assessment, onSubmit }) => {
       if (q.type === 'rearrange') {
         return [...q.options];
       }
+      if (q.type === 'msq') {
+        return [];
+      }
+      if (q.type === 'text_input') {
+        return '';
+      }
       return null;
     });
   });
 
   const handleSelect = (qIndex, value) => {
     const newAnswers = [...answers];
-    newAnswers[qIndex] = value;
+    const qType = assessment.questions[qIndex].type;
+    
+    if (qType === 'msq') {
+      const currentArr = newAnswers[qIndex] || [];
+      if (currentArr.includes(value)) {
+        newAnswers[qIndex] = currentArr.filter(v => v !== value);
+      } else {
+        newAnswers[qIndex] = [...currentArr, value];
+      }
+    } else {
+      newAnswers[qIndex] = value;
+    }
+    
     setAnswers(newAnswers);
   };
 
@@ -36,10 +54,13 @@ const Assessment = ({ assessment, onSubmit }) => {
   const handleSubmit = () => {
     if (!assessment || !assessment.questions) return;
 
-    // Check if any non-rearrange question is unanswered
+    // Check if any question is unanswered
     const isUnanswered = answers.some((ans, idx) => {
       const type = assessment.questions[idx].type;
-      return (type !== 'rearrange' && ans === null);
+      if (type === 'rearrange') return false;
+      if (type === 'msq') return !ans || ans.length === 0;
+      if (type === 'text_input') return typeof ans !== 'string' || ans.trim() === '';
+      return ans === null;
     });
 
     if (isUnanswered) {
@@ -62,7 +83,7 @@ const Assessment = ({ assessment, onSubmit }) => {
         <div key={qIndex} className="mb-8 p-6 bg-surface-container-lowest rounded-xl border border-outline-variant/30 shadow-sm">
           <p className="font-bold text-lg mb-4 text-text-primary">{qIndex + 1}. {q.questionText}</p>
           
-          {(!q.type || q.type === 'text') && (
+          {(!q.type || q.type === 'text' || q.type === 'mcq') && (
             <div className="flex flex-col gap-3">
               {q.options.map((opt, optIndex) => (
                 <label 
@@ -79,6 +100,37 @@ const Assessment = ({ assessment, onSubmit }) => {
                   {opt}
                 </label>
               ))}
+            </div>
+          )}
+
+          {q.type === 'msq' && (
+            <div className="flex flex-col gap-3">
+              <p className="text-sm text-text-dim mb-1 italic">Select all that apply</p>
+              {q.options.map((opt, optIndex) => (
+                <label 
+                  key={optIndex} 
+                  className={`flex items-center gap-3 p-4 rounded-lg cursor-pointer border transition-all ${(answers[qIndex] || []).includes(optIndex) ? 'bg-primary/10 border-primary text-primary font-bold shadow-sm' : 'bg-surface border-transparent hover:border-outline-variant/50'}`}
+                >
+                  <input 
+                    type="checkbox" 
+                    checked={(answers[qIndex] || []).includes(optIndex)} 
+                    onChange={() => handleSelect(qIndex, optIndex)} 
+                    className="w-4 h-4 text-primary bg-background border-outline-variant rounded focus:ring-primary focus:ring-2"
+                  />
+                  {opt}
+                </label>
+              ))}
+            </div>
+          )}
+
+          {q.type === 'text_input' && (
+            <div className="flex flex-col gap-3">
+              <textarea 
+                value={answers[qIndex] || ''}
+                onChange={(e) => handleSelect(qIndex, e.target.value)}
+                placeholder="Type your answer here..."
+                className="w-full p-4 rounded-lg border border-outline-variant focus:border-primary focus:ring-1 focus:ring-primary outline-none min-h-[120px] resize-y bg-surface"
+              ></textarea>
             </div>
           )}
 

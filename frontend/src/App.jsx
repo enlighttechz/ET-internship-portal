@@ -82,7 +82,7 @@ function App() {
     <Router>
       <div style={{ padding: '0', minHeight: 'calc(100vh - 60px)' }}>
         <Routes>
-          <Route path="/" element={token ? (student && !student.hasCompletedProfile ? <Navigate to="/complete-profile" /> : student && student.domain === 'Pending' ? <Navigate to="/domain-selection" /> : student && !student.hasCompletedOnboarding ? <Navigate to="/onboarding" /> : <Roadmap token={token} student={student} logout={logout} />) : <Navigate to="/login" />} />
+          <Route path="/" element={<Navigate to="/dashboard" replace />} />
           <Route path="/dashboard" element={token ? (student && !student.hasCompletedProfile ? <Navigate to="/complete-profile" /> : student && student.domain === 'Pending' ? <Navigate to="/domain-selection" /> : student && !student.hasCompletedOnboarding ? <Navigate to="/onboarding" /> : <StudentDashboard token={token} student={student} setStudent={setStudent} logout={logout} />) : <Navigate to="/login" />} />
           <Route path="/course" element={token ? (student && !student.hasCompletedProfile ? <Navigate to="/complete-profile" /> : student && student.domain === 'Pending' ? <Navigate to="/domain-selection" /> : student && !student.hasCompletedOnboarding ? <Navigate to="/onboarding" /> : <CourseViewer token={token} student={student} logout={logout} />) : <Navigate to="/login" />} />
           <Route path="/domain-selection" element={token ? (student && !student.hasCompletedProfile ? <Navigate to="/complete-profile" /> : <DomainSelection token={token} student={student} setStudent={setStudent} logout={logout} />) : <Navigate to="/login" />} />
@@ -108,14 +108,7 @@ function App() {
         </Routes>
       </div>
       
-      <footer style={{ background: 'var(--bg-card)', padding: '20px 0', textAlign: 'center', borderTop: '1px solid var(--glass-border)' }}>
-        <p style={{ color: 'var(--text-dim)', fontSize: '0.9rem', marginBottom: '8px' }}>&copy; 2026 Enlight Techz. All rights reserved.</p>
-        <div style={{ display: 'flex', justifyContent: 'center', gap: '20px', fontSize: '0.85rem' }}>
-          <Link to="/privacy-policy" style={{ color: 'var(--primary)', textDecoration: 'none' }} className="hover:underline">Privacy Policy</Link>
-          <Link to="/terms-of-service" style={{ color: 'var(--primary)', textDecoration: 'none' }} className="hover:underline">Terms of Service</Link>
-          <Link to="/help" style={{ color: 'var(--primary)', textDecoration: 'none' }} className="hover:underline">Help</Link>
-        </div>
-      </footer>
+
     </Router>
   );
 }

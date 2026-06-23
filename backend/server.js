@@ -649,6 +649,73 @@ app.post('/api/assessments', async (req, res) => {
   }
 });
 
+app.post('/api/assessments/import-form', async (req, res) => {
+  try {
+    let { url } = req.body;
+    if (!url || (!url.includes('docs.google.com/forms') && !url.includes('forms.gle'))) {
+      return res.status(400).json({ msg: 'Invalid Google Forms URL' });
+    }
+
+    // Use fetch since axios may not be available in backend environment (as seen in earlier errors) or we can just require axios inside.
+    // Actually, axios is in package.json, let's use it.
+    const axios = require('axios');
+    const response = await axios.get(url);
+    const html = response.data;
+    
+    // Google Forms stores its data in a JS variable FB_PUBLIC_LOAD_DATA_
+    const startStr = 'var FB_PUBLIC_LOAD_DATA_ = ';
+    const startIdx = html.indexOf(startStr);
+    
+    if (startIdx === -1) {
+      return res.status(400).json({ msg: 'Could not extract form data. Ensure the form is public.' });
+    }
+
+    const jsonStart = startIdx + startStr.length;
+    const endIdx = html.indexOf('</script>', jsonStart);
+    let jsonStr = html.substring(jsonStart, endIdx).trim();
+    if (jsonStr.endsWith(';')) {
+      jsonStr = jsonStr.slice(0, -1);
+    }
+
+    const data = JSON.parse(jsonStr);
+    const formQuestions = data[1][1];
+    
+    if (!formQuestions) {
+      return res.status(400).json({ msg: 'No questions found in form' });
+    }
+
+    const parsedQuestions = [];
+    
+    for (let q of formQuestions) {
+      // type 2 corresponds to multiple choice
+      const qText = q[1];
+      const qType = q[3]; 
+      
+      // We only want multiple choice or dropdowns
+      if (qType === 2 || qType === 3 || qType === 4) {
+        const optionsList = q[4][0][1];
+        if (optionsList && optionsList.length > 0) {
+          const options = optionsList.map(opt => opt[0]);
+          // Pad to 4 options if fewer, take first 4 if more
+          while (options.length < 4) options.push("");
+          const finalOptions = options.slice(0, 4);
+          
+          parsedQuestions.push({
+            questionText: qText,
+            options: finalOptions,
+            correctAnswerIndex: 0 // Default to first option as we can't fetch correct answers from a public form easily
+          });
+        }
+      }
+    }
+
+    res.json({ questions: parsedQuestions });
+  } catch (err) {
+    console.error('Error importing form:', err.message);
+    res.status(500).json({ error: err.message });
+  }
+});
+
 app.post('/api/assessments/:domain/submit', protect, async (req, res) => {
   try {
     const { answers } = req.body; // Array of selected option indices

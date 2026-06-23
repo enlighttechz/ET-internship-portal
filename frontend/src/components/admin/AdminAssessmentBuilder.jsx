@@ -14,6 +14,8 @@ const AdminAssessmentBuilder = () => {
   const [opt2, setOpt2] = useState('');
   const [opt3, setOpt3] = useState('');
   const [correctIdx, setCorrectIdx] = useState(0);
+  const [formUrl, setFormUrl] = useState('');
+  const [isImporting, setIsImporting] = useState(false);
 
   useEffect(() => {
     fetchCourses();
@@ -126,6 +128,25 @@ const AdminAssessmentBuilder = () => {
     } catch(err) { alert('Failed to save assessment'); }
   };
 
+  const importFromGoogleForm = async () => {
+    if (!formUrl) return alert("Please enter a Google Form URL");
+    setIsImporting(true);
+    try {
+      const res = await axios.post(`${API_URL}/assessments/import-form`, { url: formUrl });
+      if (res.data && res.data.questions && res.data.questions.length > 0) {
+        setAssessQuestions(prev => [...prev, ...res.data.questions]);
+        alert(`Successfully imported ${res.data.questions.length} questions from Google Form! (Please review correct answers)`);
+        setFormUrl('');
+      } else {
+        alert("No questions found in the form.");
+      }
+    } catch(err) {
+      alert(err.response?.data?.msg || "Failed to import form. Make sure it's a valid, public Google Form link.");
+    } finally {
+      setIsImporting(false);
+    }
+  };
+
   return (
     <div className="animate-fade-in">
       <div className="mb-8 flex flex-col md:flex-row md:items-end justify-between gap-4">
@@ -183,12 +204,30 @@ const AdminAssessmentBuilder = () => {
 
           {/* Question List */}
           <div className="lg:col-span-2 flex flex-col min-h-0">
-            <div className="flex justify-between items-center mb-4">
+            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4 gap-4">
               <h4 className="font-bold text-lg">Current Questions ({assessQuestions.length})</h4>
-              <label className="bg-accent/10 text-accent hover:bg-accent/20 px-4 py-2 rounded-xl font-bold text-sm cursor-pointer transition-colors shadow-sm border border-accent/20">
-                Bulk Upload CSV
-                <input type="file" accept=".csv" className="hidden" onChange={handleCSVUpload} />
-              </label>
+              <div className="flex flex-wrap items-center gap-3">
+                <div className="flex items-center gap-2">
+                  <input 
+                    type="text" 
+                    placeholder="Paste Google Form Link..." 
+                    value={formUrl}
+                    onChange={(e) => setFormUrl(e.target.value)}
+                    className="p-2 text-sm rounded-xl border border-outline-variant bg-surface focus:border-primary outline-none min-w-[200px]"
+                  />
+                  <button 
+                    onClick={importFromGoogleForm}
+                    disabled={isImporting}
+                    className="bg-primary/10 text-primary hover:bg-primary hover:text-white px-3 py-2 rounded-xl font-bold text-sm transition-colors border border-primary/20 disabled:opacity-50"
+                  >
+                    {isImporting ? 'Importing...' : 'Import Form'}
+                  </button>
+                </div>
+                <label className="bg-accent/10 text-accent hover:bg-accent/20 px-4 py-2 rounded-xl font-bold text-sm cursor-pointer transition-colors shadow-sm border border-accent/20 flex-shrink-0">
+                  Bulk Upload CSV
+                  <input type="file" accept=".csv" className="hidden" onChange={handleCSVUpload} />
+                </label>
+              </div>
             </div>
             <div className="space-y-4 max-h-[600px] overflow-y-auto pr-2">
               {assessQuestions.map((q, idx) => (
