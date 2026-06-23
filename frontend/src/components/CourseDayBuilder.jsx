@@ -122,6 +122,10 @@ const DayEditor = ({ day, onRefresh }) => {
   const [newItemType, setNewItemType] = useState('content');
   const [newItemContentForm, setNewItemContentForm] = useState({ title: '', contentType: 'text', body: '', videoUrl: '', imageUrl: '', formUrl: '', question: '', expectedAnswer: '', questions: [] });
   const [editingItemIdx, setEditingItemIdx] = useState(null);
+
+  useEffect(() => {
+    setItems(day.items || []);
+  }, [day.items]);
   
   const [isEditingDay, setIsEditingDay] = useState(false);
   const [editDayForm, setEditDayForm] = useState({ dayNumber: day.dayNumber, title: day.title, description: day.description || '' });
@@ -216,7 +220,10 @@ const DayEditor = ({ day, onRefresh }) => {
     setIsAddingItem(false);
     setEditingItemIdx(null);
     try {
-      await axios.put(`${API_URL}/course-days/${day._id}`, { items: newItems });
+      const res = await axios.put(`${API_URL}/course-days/${day._id}`, { items: newItems });
+      if (res.data && res.data.items) {
+        setItems(res.data.items);
+      }
       setNewItemContentForm({ title: '', contentType: 'text', body: '', videoUrl: '', imageUrl: '', formUrl: '', question: '', expectedAnswer: '', questions: [] });
     } catch (err) {
       alert("Failed to add item: " + err.message);

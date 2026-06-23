@@ -19,7 +19,7 @@ const RichTextEditor = ({ value, onChange, placeholder }) => {
       }
     }
     isInternalChange.current = false;
-  }, [value]);
+  }, [value, isPreview]);
 
   const handleInput = () => {
     if (editorRef.current) {

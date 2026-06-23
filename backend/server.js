@@ -22,7 +22,8 @@ const Feedback = require('./models/Feedback');
 const app = express();
 
 app.use(cors({origin:['http://intern.enlighttechz.in','http://intern.enlighttechz.in/', 'https://intern.enlighttechz.in/','https://intern.enlighttechz.in', 'https://et-internship-portal.vercel.app/','http://localhost:5173/', 'http://localhost:5173']}));
-app.use(express.json());
+app.use(express.json({ limit: '50mb' }));
+app.use(express.urlencoded({ limit: '50mb', extended: true }));
 
 let cachedKeys = [];
 
