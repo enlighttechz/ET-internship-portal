@@ -587,8 +587,8 @@ app.get('/api/course-days/:domain', async (req, res) => {
 
 app.post('/api/course-days', async (req, res) => {
   try {
-    const { domain, dayNumber, title, description, items, qnaText, geminiPrompt } = req.body;
-    const newDay = new CourseDay({ domain, dayNumber, title, description, items: items || [], qnaText, geminiPrompt });
+    const { domain, dayNumber, week, title, description, items, qnaText, geminiPrompt } = req.body;
+    const newDay = new CourseDay({ domain, dayNumber, week, title, description, items: items || [], qnaText, geminiPrompt });
     await newDay.save();
     apiCache.clear();
     res.json(newDay);

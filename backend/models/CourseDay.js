@@ -29,6 +29,7 @@ const itemSchema = new mongoose.Schema({
 const courseDaySchema = new mongoose.Schema({
   domain: { type: String, required: true, index: true },
   dayNumber: { type: Number, required: true },
+  week: { type: String, default: 'Week 1' },
   title: { type: String, required: true },
   description: { type: String },
   hidden: { type: Boolean, default: false },

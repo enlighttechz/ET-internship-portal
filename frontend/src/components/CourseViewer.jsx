@@ -578,34 +578,82 @@ const CourseViewer = ({ token, student: initialStudent, logout }) => {
 
           <div className="pt-4 border-t border-outline-variant/30">
             {!sidebarMinimized && <h4 className="text-xs uppercase tracking-wider font-bold text-text-dim mb-3">Course Roadmap</h4>}
-            {courseDays.map((day, idx) => {
-              const isFutureDay = day.dayNumber > (courseData?.learningProgress || 1);
-              const isNextDayLockedByTime = isLockedByTime && day.dayNumber === (courseData?.learningProgress || 1);
-              const isLocked = isFutureDay || isNextDayLockedByTime;
-              const isCompleted = day.dayNumber < (courseData?.learningProgress || 1);
-              const isActive = activeDayIndex === idx;
+            
+            {(courseDetails?.weeks?.length > 0 ? courseDetails.weeks : ['Week 1']).map((week, wIdx) => {
+              const daysInWeek = courseDays.filter(d => (d.week || 'Week 1') === week);
+              if (daysInWeek.length === 0) return null;
+              
               return (
-                <button 
-                  key={day._id}
-                  onClick={() => {
-                    if (!isLocked) {
-                      setActiveDayIndex(idx);
-                      setActiveItemIndex(0);
-                      if(window.innerWidth < 768) setSidebarOpen(false);
-                    }
-                  }}
-                  disabled={isLocked}
-                  title={sidebarMinimized ? `Day ${day.dayNumber}: ${day.title}` : ""}
-                  className={`w-full flex flex-col text-left p-3 rounded-xl mb-2 transition-all ${isActive ? 'bg-primary text-white shadow-lg shadow-primary/20 scale-[1.02]' : isLocked ? 'opacity-50 cursor-not-allowed text-text-dim bg-surface-container-highest/20 pointer-events-none' : 'bg-surface-container hover:bg-surface-container-high text-text-primary'}`}
-                >
-                  <div className={`flex items-center gap-2 ${sidebarMinimized ? 'justify-center w-full' : 'mb-1'}`}>
-                    {isLocked ? <Lock size={14} className="shrink-0" /> : isCompleted && !isActive ? <CheckCircle size={14} className="text-success shrink-0" /> : <PlayCircle size={14} className="shrink-0" />}
-                    {!sidebarMinimized && <span className="font-bold text-sm">Day {day.dayNumber}</span>}
-                  </div>
-                  {!sidebarMinimized && <span className={`text-xs truncate w-full ${isActive ? 'text-white/80' : 'text-text-dim'}`}>{day.title}</span>}
-                </button>
+                <div key={`week-${wIdx}`} className="mb-4">
+                  {!sidebarMinimized && <h5 className="text-[10px] uppercase tracking-wider font-bold text-primary mb-2 pl-2">{week}</h5>}
+                  {daysInWeek.map(day => {
+                    const idx = courseDays.findIndex(d => d._id === day._id);
+                    const isFutureDay = day.dayNumber > (courseData?.learningProgress || 1);
+                    const isNextDayLockedByTime = isLockedByTime && day.dayNumber === (courseData?.learningProgress || 1);
+                    const isLocked = isFutureDay || isNextDayLockedByTime;
+                    const isCompleted = day.dayNumber < (courseData?.learningProgress || 1);
+                    const isActive = activeDayIndex === idx;
+                    return (
+                      <button 
+                        key={day._id}
+                        onClick={() => {
+                          if (!isLocked) {
+                            setActiveDayIndex(idx);
+                            setActiveItemIndex(0);
+                            if(window.innerWidth < 768) setSidebarOpen(false);
+                          }
+                        }}
+                        disabled={isLocked}
+                        title={sidebarMinimized ? `Day ${day.dayNumber}: ${day.title}` : ""}
+                        className={`w-full flex flex-col text-left p-3 rounded-xl mb-2 transition-all ${isActive ? 'bg-primary text-white shadow-lg shadow-primary/20 scale-[1.02]' : isLocked ? 'opacity-50 cursor-not-allowed text-text-dim bg-surface-container-highest/20 pointer-events-none' : 'bg-surface-container hover:bg-surface-container-high text-text-primary'}`}
+                      >
+                        <div className={`flex items-center gap-2 ${sidebarMinimized ? 'justify-center w-full' : 'mb-1'}`}>
+                          {isLocked ? <Lock size={14} className="shrink-0" /> : isCompleted && !isActive ? <CheckCircle size={14} className="text-success shrink-0" /> : <PlayCircle size={14} className="shrink-0" />}
+                          {!sidebarMinimized && <span className="font-bold text-sm">Day {day.dayNumber}</span>}
+                        </div>
+                        {!sidebarMinimized && <span className={`text-xs truncate w-full ${isActive ? 'text-white/80' : 'text-text-dim'}`}>{day.title}</span>}
+                      </button>
+                    );
+                  })}
+                </div>
               );
             })}
+            
+            {/* Uncategorized days */}
+            {courseDays.filter(d => !(courseDetails?.weeks?.length > 0 ? courseDetails.weeks : ['Week 1']).includes(d.week || 'Week 1')).length > 0 && (
+              <div className="mb-4">
+                {!sidebarMinimized && <h5 className="text-[10px] uppercase tracking-wider font-bold text-text-dim mb-2 pl-2">Other Days</h5>}
+                {courseDays.filter(d => !(courseDetails?.weeks?.length > 0 ? courseDetails.weeks : ['Week 1']).includes(d.week || 'Week 1')).map(day => {
+                  const idx = courseDays.findIndex(d => d._id === day._id);
+                  const isFutureDay = day.dayNumber > (courseData?.learningProgress || 1);
+                  const isNextDayLockedByTime = isLockedByTime && day.dayNumber === (courseData?.learningProgress || 1);
+                  const isLocked = isFutureDay || isNextDayLockedByTime;
+                  const isCompleted = day.dayNumber < (courseData?.learningProgress || 1);
+                  const isActive = activeDayIndex === idx;
+                  return (
+                    <button 
+                      key={day._id}
+                      onClick={() => {
+                        if (!isLocked) {
+                          setActiveDayIndex(idx);
+                          setActiveItemIndex(0);
+                          if(window.innerWidth < 768) setSidebarOpen(false);
+                        }
+                      }}
+                      disabled={isLocked}
+                      title={sidebarMinimized ? `Day ${day.dayNumber}: ${day.title}` : ""}
+                      className={`w-full flex flex-col text-left p-3 rounded-xl mb-2 transition-all ${isActive ? 'bg-primary text-white shadow-lg shadow-primary/20 scale-[1.02]' : isLocked ? 'opacity-50 cursor-not-allowed text-text-dim bg-surface-container-highest/20 pointer-events-none' : 'bg-surface-container hover:bg-surface-container-high text-text-primary'}`}
+                    >
+                      <div className={`flex items-center gap-2 ${sidebarMinimized ? 'justify-center w-full' : 'mb-1'}`}>
+                        {isLocked ? <Lock size={14} className="shrink-0" /> : isCompleted && !isActive ? <CheckCircle size={14} className="text-success shrink-0" /> : <PlayCircle size={14} className="shrink-0" />}
+                        {!sidebarMinimized && <span className="font-bold text-sm">Day {day.dayNumber}</span>}
+                      </div>
+                      {!sidebarMinimized && <span className={`text-xs truncate w-full ${isActive ? 'text-white/80' : 'text-text-dim'}`}>{day.title}</span>}
+                    </button>
+                  );
+                })}
+              </div>
+            )}
           </div>
         </div>
 

@@ -11,7 +11,8 @@ const courseSchema = new mongoose.Schema({
   whatsappLink: { type: String, default: '' },
   onboardingNote: { type: String, default: '' },
   hidden: { type: Boolean, default: false },
-  startDate: { type: String, default: '' }
+  startDate: { type: String, default: '' },
+  weeks: [{ type: String }]
 }, { timestamps: true });
 
 module.exports = mongoose.model('Course', courseSchema);

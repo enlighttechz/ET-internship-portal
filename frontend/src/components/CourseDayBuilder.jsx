@@ -9,11 +9,15 @@ const CourseDayBuilder = ({ course }) => {
   const [days, setDays] = useState([]);
   const [isExpanded, setIsExpanded] = useState(false);
   const [loading, setLoading] = useState(false);
+  
+  const [weeks, setWeeks] = useState(course.weeks && course.weeks.length > 0 ? course.weeks : ['Week 1']);
+  const [newWeekTitle, setNewWeekTitle] = useState('');
 
-  // New Day form
-  const [newDayNum, setNewDayNum] = useState(1);
-  const [newDayTitle, setNewDayTitle] = useState('');
-  const [newDayDesc, setNewDayDesc] = useState('');
+  useEffect(() => {
+    if (course.weeks && course.weeks.length > 0) {
+      setWeeks(course.weeks);
+    }
+  }, [course.weeks]);
 
   useEffect(() => {
     if (isExpanded) {
@@ -26,29 +30,20 @@ const CourseDayBuilder = ({ course }) => {
     try {
       const res = await axios.get(`${API_URL}/course-days/${course.title}`);
       setDays(res.data);
-      if (res.data.length > 0) {
-        setNewDayNum(Math.max(...res.data.map(d => d.dayNumber)) + 1);
-      }
     } catch (err) {
       console.error(err);
     }
     setLoading(false);
   };
 
-  const addDay = async (e) => {
+  const addWeek = async (e) => {
     e.preventDefault();
-    if (!newDayTitle) return;
+    if (!newWeekTitle) return;
     try {
-      await axios.post(`${API_URL}/course-days`, {
-        domain: course.title,
-        dayNumber: newDayNum,
-        title: newDayTitle,
-        description: newDayDesc,
-        items: []
-      });
-      setNewDayTitle('');
-      setNewDayDesc('');
-      fetchDays();
+      const updatedWeeks = [...weeks, newWeekTitle];
+      await axios.put(`${API_URL}/courses/${course._id}`, { weeks: updatedWeeks });
+      setWeeks(updatedWeeks);
+      setNewWeekTitle('');
     } catch (err) {
       alert(err.message);
     }
@@ -64,6 +59,8 @@ const CourseDayBuilder = ({ course }) => {
     }
   };
 
+  const nextDayNum = days.length > 0 ? Math.max(...days.map(d => d.dayNumber)) + 1 : 1;
+
   return (
     <div className="bg-surface rounded-2xl border border-outline-variant/30 shadow-sm overflow-hidden transition-all duration-300 mb-4">
       <div 
@@ -75,7 +72,7 @@ const CourseDayBuilder = ({ course }) => {
         </div>
         <div className="flex-1 min-w-0">
           <h4 className="font-bold text-base text-text-primary truncate">{course.title} Curriculum Builder</h4>
-          <p className="text-xs text-text-dim">{days.length} Days configured</p>
+          <p className="text-xs text-text-dim">{weeks.length} Weeks • {days.length} Days</p>
         </div>
         <div className="shrink-0">
           {isExpanded ? <ChevronUp size={20} className="text-text-dim" /> : <ChevronDown size={20} className="text-text-dim" />}
@@ -85,26 +82,42 @@ const CourseDayBuilder = ({ course }) => {
       {isExpanded && (
         <div className="border-t border-outline-variant/30 p-4 bg-surface-container-lowest">
           {loading ? (
-            <p className="text-center text-text-dim py-4 text-sm">Loading days...</p>
+            <p className="text-center text-text-dim py-4 text-sm">Loading curriculum...</p>
           ) : (
             <div className="space-y-6">
-              {days.map(day => (
-                <DayEditor key={day._id} day={day} onRefresh={fetchDays} />
-              ))}
-              
-              {/* Add New Day */}
-              <form onSubmit={addDay} className="bg-surface p-4 rounded-xl border border-dashed border-primary/50">
-                <h5 className="font-bold text-sm text-primary mb-3 flex items-center gap-2">
-                  <Plus size={16} /> Add New Day
-                </h5>
-                <div className="grid grid-cols-1 sm:grid-cols-4 gap-3 mb-3">
-                  <input type="number" value={newDayNum} onChange={e => setNewDayNum(Number(e.target.value))} className="p-2 rounded-lg border border-outline-variant text-sm" placeholder="Day #" required min="1" />
-                  <input type="text" value={newDayTitle} onChange={e => setNewDayTitle(e.target.value)} className="p-2 rounded-lg border border-outline-variant text-sm sm:col-span-3" placeholder="Day Title (e.g. Intro to Python)" required />
+              {weeks.map((week, idx) => (
+                <div key={idx} className="bg-surface-container rounded-xl p-4 border border-outline-variant/30 shadow-sm">
+                  <h4 className="font-bold text-lg text-primary mb-4 border-b border-outline-variant/30 pb-2">{week}</h4>
+                  <div className="space-y-4">
+                    {days.filter(d => (d.week || 'Week 1') === week).map(day => (
+                      <DayEditor key={day._id} day={day} onRefresh={fetchDays} allWeeks={weeks} />
+                    ))}
+                    
+                    <NewDayForm course={course} week={week} defaultDayNum={nextDayNum} onRefresh={fetchDays} />
+                  </div>
                 </div>
+              ))}
+
+              {days.filter(d => !weeks.includes(d.week || 'Week 1')).length > 0 && (
+                <div className="bg-surface-container rounded-xl p-4 border border-outline-variant/30 opacity-80 shadow-sm">
+                  <h4 className="font-bold text-lg text-text-dim mb-4 border-b border-outline-variant/30 pb-2">Uncategorized / Legacy Days</h4>
+                  <div className="space-y-4">
+                    {days.filter(d => !weeks.includes(d.week || 'Week 1')).map(day => (
+                      <DayEditor key={day._id} day={day} onRefresh={fetchDays} allWeeks={weeks} />
+                    ))}
+                  </div>
+                </div>
+              )}
+              
+              {/* Add New Week */}
+              <form onSubmit={addWeek} className="bg-surface p-4 rounded-xl border border-dashed border-primary/50 shadow-sm">
+                <h5 className="font-bold text-sm text-primary mb-3 flex items-center gap-2">
+                  <Plus size={16} /> Add New Week
+                </h5>
                 <div className="flex gap-3">
-                  <input type="text" value={newDayDesc} onChange={e => setNewDayDesc(e.target.value)} className="flex-1 p-2 rounded-lg border border-outline-variant text-sm" placeholder="Short description..." />
+                  <input type="text" value={newWeekTitle} onChange={e => setNewWeekTitle(e.target.value)} className="flex-1 p-2 rounded-lg border border-outline-variant text-sm" placeholder="Week Title (e.g. Week 1: Introduction to Web Dev)" required />
                   <button type="submit" className="bg-primary text-white px-4 py-2 rounded-lg text-sm font-bold hover:bg-primary/90 transition-colors">
-                    Create Day
+                    Create Week
                   </button>
                 </div>
               </form>
@@ -113,6 +126,54 @@ const CourseDayBuilder = ({ course }) => {
         </div>
       )}
     </div>
+  );
+};
+
+const NewDayForm = ({ course, week, defaultDayNum, onRefresh }) => {
+  const [newDayNum, setNewDayNum] = useState(defaultDayNum);
+  const [newDayTitle, setNewDayTitle] = useState('');
+  const [newDayDesc, setNewDayDesc] = useState('');
+
+  useEffect(() => {
+    setNewDayNum(defaultDayNum);
+  }, [defaultDayNum]);
+
+  const addDay = async (e) => {
+    e.preventDefault();
+    if (!newDayTitle) return;
+    try {
+      await axios.post(`${API_URL}/course-days`, {
+        domain: course.title,
+        dayNumber: newDayNum,
+        week: week,
+        title: newDayTitle,
+        description: newDayDesc,
+        items: []
+      });
+      setNewDayTitle('');
+      setNewDayDesc('');
+      onRefresh();
+    } catch (err) {
+      alert(err.message);
+    }
+  };
+
+  return (
+    <form onSubmit={addDay} className="bg-surface p-4 rounded-xl border border-dashed border-text-dim/30">
+      <h5 className="font-bold text-sm text-text-dim mb-3 flex items-center gap-2">
+        <Plus size={14} /> Add New Day to {week}
+      </h5>
+      <div className="grid grid-cols-1 sm:grid-cols-4 gap-3 mb-3">
+        <input type="number" value={newDayNum} onChange={e => setNewDayNum(Number(e.target.value))} className="p-2 rounded-lg border border-outline-variant text-sm bg-surface" placeholder="Day #" required min="1" />
+        <input type="text" value={newDayTitle} onChange={e => setNewDayTitle(e.target.value)} className="p-2 rounded-lg border border-outline-variant text-sm sm:col-span-3 bg-surface" placeholder="Day Title (e.g. Variables and Data Types)" required />
+      </div>
+      <div className="flex gap-3">
+        <input type="text" value={newDayDesc} onChange={e => setNewDayDesc(e.target.value)} className="flex-1 p-2 rounded-lg border border-outline-variant text-sm bg-surface" placeholder="Short description..." />
+        <button type="submit" className="bg-surface-container-highest text-text-primary px-4 py-2 rounded-lg text-sm font-bold hover:bg-primary hover:text-white transition-colors border border-outline-variant/50">
+          Create Day
+        </button>
+      </div>
+    </form>
   );
 };
 
