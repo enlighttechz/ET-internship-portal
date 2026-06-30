@@ -103,6 +103,24 @@ app.get('/', (req, res) => {
   res.send('LMS Backend API is running! Access the frontend at http://localhost:5173');
 });
 
+let isConnected = false;
+
+async function connectDB() {
+  if (isConnected) return;
+  
+  mongoose.set("bufferCommands", false);
+  await mongoose.connect(process.env.MONGO_URI || 'mongodb://127.0.0.1:27017/lms');
+  
+  isConnected = true;
+  console.log('MongoDB Connected');
+}
+
+// Ensure DB is connected on every API request
+app.use(async (req, res, next) => {
+  await connectDB();
+  next();
+});
+
 // --- System Config Routes ---
 app.get('/api/system-config', async (req, res) => {
   try {
@@ -166,10 +184,6 @@ Return the response ONLY as a valid JSON object with the following exact keys:
     res.status(500).json({ error: err.message });
   }
 });
-
-mongoose.connect(process.env.MONGO_URI || 'mongodb://127.0.0.1:27017/lms')
-  .then(() => console.log('MongoDB Connected'))
-  .catch(err => console.log(err));
 
 // Auth API
 app.post('/api/auth/register', async (req, res) => {

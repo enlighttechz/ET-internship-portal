@@ -556,29 +556,29 @@ const CourseViewer = ({ token, student: initialStudent, logout }) => {
   return (
     <div className="bg-[#f5f5f5] text-gray-900 flex flex-col h-screen overflow-hidden font-sans">
       
-      {/* GUVI-Style Top Navigation Bar */}
-      <header className="bg-[#1a1a2e] text-white flex items-center justify-between px-4 md:px-6 py-3 shrink-0 z-50 shadow-lg">
-        <div className="flex items-center gap-3">
-          <button onClick={() => setSidebarOpen(true)} className="lg:hidden p-1.5 hover:bg-white/10 rounded-lg transition-colors">
-            <Menu size={22} />
+      {/* MS Learn Style Top Navigation Bar */}
+      <header className="bg-white border-b border-gray-200 text-gray-900 flex items-center justify-between px-4 md:px-6 py-3 shrink-0 z-50">
+        <div className="flex items-center gap-4">
+          <button onClick={() => setSidebarOpen(true)} className="lg:hidden p-1.5 hover:bg-gray-100 rounded-lg transition-colors">
+            <Menu size={22} className="text-gray-700" />
           </button>
           <div className="flex items-center gap-2 cursor-pointer" onClick={() => navigate('/dashboard')}>
-            <img src={ETLogo} alt="Logo" className="w-7 h-7 drop-shadow-md shrink-0" />
-            <span className="font-bold text-base hidden sm:inline">Enlight Techz</span>
+            <img src={ETLogo} alt="Logo" className="w-7 h-7" />
+            <span className="font-semibold text-base hidden sm:inline text-gray-900">Enlight Techz</span>
           </div>
-          <span className="hidden md:inline text-white/40 mx-2">|</span>
-          <span className="hidden md:inline text-sm text-white/80 truncate max-w-[300px]">{activeDomain}</span>
+          <span className="hidden md:inline text-gray-300 mx-2">|</span>
+          <span className="hidden md:inline text-sm text-gray-600 font-medium truncate max-w-[300px]">Learn</span>
         </div>
         <div className="flex items-center gap-3">
           <button 
             id="btn-bgm"
             onClick={() => setBgmPlaying(!bgmPlaying)}
-            className={`p-2 rounded-lg transition-colors ${bgmPlaying ? 'bg-white/20 text-white' : 'text-white/60 hover:text-white hover:bg-white/10'} ${showTutorial && tutorialStep === 1 ? 'relative z-[70] ring-4 ring-primary bg-white/30 shadow-2xl scale-125' : ''}`}
+            className={`p-2 rounded-lg transition-colors ${bgmPlaying ? 'bg-blue-50 text-blue-600' : 'text-gray-500 hover:text-gray-900 hover:bg-gray-100'} ${showTutorial && tutorialStep === 1 ? 'relative z-[70] ring-4 ring-blue-500 bg-white shadow-2xl scale-125' : ''}`}
             title="Study Music"
           >
             <Music size={18} />
           </button>
-          <button onClick={() => setRecommendationInboxOpen(true)} className="p-2 rounded-lg text-white/60 hover:text-white hover:bg-white/10 transition-colors relative">
+          <button onClick={() => setRecommendationInboxOpen(true)} className="p-2 rounded-lg text-gray-500 hover:text-gray-900 hover:bg-gray-100 transition-colors relative">
             <Inbox size={18} />
             {unreadCount > 0 && <span className="absolute -top-1 -right-1 bg-red-500 text-white text-[9px] w-4 h-4 rounded-full flex items-center justify-center">{unreadCount}</span>}
           </button>
@@ -587,11 +587,11 @@ const CourseViewer = ({ token, student: initialStudent, logout }) => {
               <GameficationUI studentId={student._id} allStudents={[student]} />
             </div>
           )}
-          <button onClick={() => navigate('/dashboard')} className="p-2 rounded-lg text-white/60 hover:text-white hover:bg-white/10 transition-colors" title="Dashboard">
+          <button onClick={() => navigate('/dashboard')} className="p-2 rounded-lg text-gray-500 hover:text-gray-900 hover:bg-gray-100 transition-colors" title="Dashboard">
             <Home size={18} />
           </button>
-          <button onClick={logout} className="hidden md:flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm text-red-300 hover:bg-red-500/20 transition-colors border border-red-400/30">
-            <X size={14} /> Logout
+          <button onClick={logout} className="hidden md:flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm text-gray-600 hover:bg-gray-100 transition-colors border border-gray-200 font-medium">
+            Logout
           </button>
         </div>
       </header>
@@ -638,7 +638,7 @@ const CourseViewer = ({ token, student: initialStudent, logout }) => {
         </div>
       )}
 
-      <main ref={contentAreaRef} className="flex-1 flex flex-col h-full relative overflow-y-auto overflow-x-hidden bg-[#f5f5f5] custom-scrollbar">
+      <main ref={contentAreaRef} className="flex-1 flex flex-col h-full relative overflow-y-auto overflow-x-hidden bg-white custom-scrollbar">
         <audio ref={audioRef} src={studyMusic} loop autoPlay={bgmPlaying} />
 
         {/* Banners */}
@@ -676,39 +676,68 @@ const CourseViewer = ({ token, student: initialStudent, logout }) => {
               </div>
             )}
 
-            {/* Content Area: Left Content + Right Sidebar */}
-            <div className="flex-1 flex flex-col lg:flex-row max-w-[1400px] mx-auto w-full">
+            {/* MS Learn Style Content Area: Left Sidebar + Main Content */}
+            <div className="flex-1 flex flex-col lg:flex-row w-full max-w-[1600px] mx-auto">
               
-              {/* Left Content Area */}
-              <div className="flex-1 min-w-0 flex flex-col">
-                
-                {/* GUVI-Style Tab Navigation */}
-                <div ref={trackerRef} className="sticky top-0 z-40 bg-white border-b border-gray-200 shadow-sm">
-                  <div className="flex items-center gap-0 px-4 md:px-8">
-                    {[
-                      { key: 'activity', label: 'Activity' },
-                      { key: 'summary', label: 'Summary' },
-                      { key: 'notes', label: 'Notes' },
-                      { key: 'discussion', label: 'Discussion', badge: true }
-                    ].map(tab => (
-                      <button
-                        key={tab.key}
-                        onClick={() => setActiveTab(tab.key)}
-                        className={`relative px-4 md:px-5 py-3.5 text-sm font-medium transition-colors whitespace-nowrap ${activeTab === tab.key ? 'text-[#1a1a2e] font-semibold' : 'text-gray-500 hover:text-gray-700'}`}
-                      >
-                        {tab.label}
-                        {tab.badge && <span className="ml-1.5 bg-green-500 text-white text-[9px] px-1.5 py-0.5 rounded font-bold align-top">New</span>}
-                        {activeTab === tab.key && <div className="absolute bottom-0 left-0 right-0 h-[3px] bg-[#1a1a2e] rounded-t-full" />}
-                      </button>
-                    ))}
-                  </div>
+              {/* Left Sidebar - Table of Contents */}
+              <aside className="hidden lg:block w-[320px] shrink-0 border-r border-gray-200 bg-gray-50 overflow-y-auto h-[calc(100vh-52px)] sticky top-0 custom-scrollbar">
+                <div className="p-6 border-b border-gray-200">
+                  <h3 className="text-sm font-bold text-gray-900 uppercase tracking-wider">{activeDomain}</h3>
                 </div>
+                <div className="p-4">
+                  {(courseDetails?.weeks?.length > 0 ? courseDetails.weeks : ['Week 1']).map((week, wIdx) => {
+                    const daysInWeek = courseDays.filter(d => (d.week || 'Week 1') === week);
+                    if (daysInWeek.length === 0) return null;
+                    const completedInWeek = daysInWeek.filter(d => d.dayNumber < (courseData?.learningProgress || 1)).length;
+                    const totalInWeek = daysInWeek.length;
+                    const weekProgress = totalInWeek > 0 ? Math.round((completedInWeek / totalInWeek) * 100) : 0;
+                    return (
+                      <div key={`toc-week-${wIdx}`} className="mb-6">
+                        <h4 className="px-3 mb-2 text-xs font-semibold text-gray-500 uppercase tracking-wider flex justify-between items-center">
+                          <span>{week}</span>
+                          {weekProgress === 100 && <CheckCircle size={14} className="text-green-600" />}
+                        </h4>
+                        <div className="space-y-0.5">
+                          {daysInWeek.map(day => {
+                            const idx = courseDays.findIndex(d => d._id === day._id);
+                            const isCompleted = day.dayNumber < (courseData?.learningProgress || 1);
+                            const isActive = activeDayIndex === idx;
+                            const isFutureDay = day.dayNumber > (courseData?.learningProgress || 1);
+                            const isLocked = isFutureDay || (isLockedByTime && day.dayNumber === (courseData?.learningProgress || 1));
+                            return (
+                              <button key={day._id}
+                                onClick={() => { if (!isLocked) { setActiveDayIndex(idx); setActiveItemIndex(0); }}}
+                                disabled={isLocked}
+                                className={`w-full flex items-start gap-3 px-3 py-2.5 text-left text-sm transition-colors rounded-lg ${isActive ? 'bg-white shadow-sm border border-gray-200 font-semibold text-blue-700' : isLocked ? 'opacity-50 cursor-not-allowed' : 'hover:bg-gray-200/50 text-gray-700'}`}>
+                                <div className="mt-0.5 shrink-0">
+                                  {isCompleted ? (
+                                    <CheckCircle size={16} className="text-green-600" />
+                                  ) : isLocked ? (
+                                    <Lock size={16} className="text-gray-400" />
+                                  ) : isActive ? (
+                                    <div className="w-4 h-4 rounded-full border-[4px] border-blue-600 bg-white" />
+                                  ) : (
+                                    <div className="w-4 h-4 rounded-full border-2 border-gray-400" />
+                                  )}
+                                </div>
+                                <span className={`leading-tight ${isActive ? 'text-gray-900' : ''}`}>{day.title}</span>
+                              </button>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </aside>
 
-                {/* Tab Content */}
-                <div className="flex-1 p-4 md:p-8">
+              {/* Main Content Area */}
+              <div className="flex-1 min-w-0 flex flex-col items-center">
+                <div className="w-full max-w-4xl px-4 md:px-12 py-8 flex flex-col min-h-[calc(100vh-52px)]">
                   
-                  {activeTab === 'activity' && (
-                    <div className="max-w-4xl">
+                {/* Content */}
+                <div ref={trackerRef} className="flex-1 w-full">
+                  <div className="w-full">
                       {dayLoading ? (
                         <div className="flex flex-col items-center justify-center py-20 text-gray-400">
                           <div className="w-10 h-10 border-4 border-[#1a1a2e] border-t-transparent rounded-full animate-spin mb-4"></div>
@@ -726,7 +755,7 @@ const CourseViewer = ({ token, student: initialStudent, logout }) => {
                           <div className="flex flex-col md:flex-row md:items-start justify-between gap-3 mb-6">
                             <div className="flex items-center gap-3">
                               <span className="bg-gray-100 text-gray-500 w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold shrink-0">{activeItemIndex + 1}</span>
-                              <h3 className="text-xl md:text-2xl font-bold text-gray-900">{currentItem.title}</h3>
+                              <h3 className="text-2xl md:text-3xl lg:text-4xl font-bold text-gray-900">{currentItem.title}</h3>
                             </div>
                             {currentItem.itemType === 'content' && currentItem.contentType !== 'video' && ttsManager.isSupported && (
                               <div className="flex items-center bg-gray-50 px-3 py-2 rounded-lg border border-gray-200 shrink-0">
@@ -747,7 +776,7 @@ const CourseViewer = ({ token, student: initialStudent, logout }) => {
 
                           {/* Content Body */}
                           {currentItem.itemType === 'content' ? (
-                            <div id="course-content-area" className={`prose prose-lg max-w-none prose-headings:text-gray-900 prose-a:text-blue-600 ${showTutorial && tutorialStep === 3 ? 'relative z-[70] bg-white p-6 rounded-xl ring-4 ring-[#1a1a2e] shadow-2xl' : ''}`}>
+                            <div id="course-content-area" className={`prose prose-base md:prose-lg lg:prose-xl max-w-none prose-headings:text-gray-900 prose-a:text-blue-600 ${showTutorial && tutorialStep === 3 ? 'relative z-[70] bg-white p-6 rounded-xl ring-4 ring-[#1a1a2e] shadow-2xl' : ''}`}>
                               {currentItem.contentType === 'video' ? null : currentItem.contentType === 'image' ? (
                                 <ImageCarousel images={currentItem.imageUrl?.split(',').map(url => url.trim()).filter(Boolean)} title={currentItem.title} />
                               ) : (
@@ -824,101 +853,24 @@ const CourseViewer = ({ token, student: initialStudent, logout }) => {
                             </div>
                           )}
 
-                          {/* Navigation - GUVI Style */}
-                          <div className="flex justify-between items-center mt-8 mb-4">
+                          {/* Navigation - MS Learn Style */}
+                          <div className="flex justify-between items-center mt-12 mb-8 pt-8 border-t border-gray-200 w-full">
                             <button onClick={handlePrev} disabled={activeDayIndex === 0 && activeItemIndex === 0}
-                              className="flex items-center gap-2 px-5 py-2.5 rounded-lg border border-gray-300 text-gray-700 font-semibold hover:bg-gray-50 transition-colors disabled:opacity-40">
-                              <ChevronLeft size={18} /> Previous
+                              className="flex items-center gap-2 px-6 py-3 rounded text-blue-600 font-semibold hover:bg-blue-50 hover:underline transition-all disabled:opacity-40 disabled:hover:no-underline disabled:hover:bg-transparent">
+                              <ChevronLeft size={20} /> <span className="hidden sm:inline">Previous</span>
                             </button>
                             <button id="btn-next" onClick={handleNext} disabled={isLockedByTime}
-                              className={`flex items-center gap-2 px-6 py-2.5 rounded-lg font-semibold transition-all shadow-sm ${isLockedByTime ? 'bg-gray-200 text-gray-400 cursor-not-allowed' : 'bg-[#1a1a2e] text-white hover:bg-[#2a2a4e]'} ${showTutorial && tutorialStep === 4 ? 'relative z-[70] ring-4 ring-[#1a1a2e] shadow-2xl scale-110' : ''}`}>
-                              {activeItemIndex === currentDay.items.length - 1 ? 'Finish Day' : 'Next'} <ChevronRight size={18} />
+                              className={`flex items-center gap-2 px-8 py-3 rounded text-white font-semibold transition-all shadow-sm ${isLockedByTime ? 'bg-gray-300 text-gray-500 cursor-not-allowed' : 'bg-blue-600 hover:bg-blue-700 hover:shadow-md'} ${showTutorial && tutorialStep === 4 ? 'relative z-[70] ring-4 ring-blue-500 shadow-2xl scale-110' : ''}`}>
+                              {activeItemIndex === currentDay.items.length - 1 ? 'Finish Day' : 'Next'} <ChevronRight size={20} />
                             </button>
                           </div>
                         </>
                       ) : (<p className="text-gray-400">No content available.</p>)}
                     </div>
-                  )}
-
-                  {activeTab === 'summary' && (
-                    <div className="max-w-4xl bg-white rounded-xl border border-gray-200 p-6 md:p-8 shadow-sm">
-                      <h3 className="text-xl font-bold text-gray-900 mb-4 flex items-center gap-2"><FileText size={20} className="text-[#1a1a2e]" /> Day {currentDay?.dayNumber} Summary</h3>
-                      <p className="text-gray-600 leading-relaxed mb-4">{currentDay?.title}</p>
-                      <div className="border-t border-gray-100 pt-4">
-                        <p className="text-sm text-gray-500">This day contains <strong>{currentDay?.items?.length || 0}</strong> modules including content, videos, and assessments.</p>
-                      </div>
-                    </div>
-                  )}
-
-                  {activeTab === 'notes' && (
-                    <div className="max-w-4xl bg-white rounded-xl border border-gray-200 p-6 md:p-8 shadow-sm">
-                      <h3 className="text-xl font-bold text-gray-900 mb-4">📝 Your Notes</h3>
-                      <textarea placeholder="Take notes while learning..." className="w-full min-h-[300px] p-4 rounded-lg border border-gray-200 focus:border-[#1a1a2e] focus:ring-1 focus:ring-[#1a1a2e] outline-none resize-y text-gray-700 mb-0" />
-                    </div>
-                  )}
-
-                  {activeTab === 'discussion' && (
-                    <div className="max-w-4xl bg-white rounded-xl border border-gray-200 p-6 md:p-8 shadow-sm">
-                      <h3 className="text-xl font-bold text-gray-900 mb-4 flex items-center gap-2"><MessageSquare size={20} className="text-[#1a1a2e]" /> Discussion</h3>
-                      {currentItem && currentItem.itemType === 'content' ? (
-                        <AskDoubtChat token={token} currentContent={currentItem} />
-                      ) : (
-                        <p className="text-gray-400 text-center py-10">Discussion is available for content modules.</p>
-                      )}
-                    </div>
-                  )}
                 </div>
               </div>
-
-              {/* Right Sidebar - Table of Contents (GUVI Style) */}
-              <aside className="hidden lg:block w-[320px] shrink-0 border-l border-gray-200 bg-white overflow-y-auto h-[calc(100vh-52px)] sticky top-0">
-                <div className="p-5 border-b border-gray-200">
-                  <h3 className="text-lg font-bold text-gray-900">Table of contents</h3>
-                </div>
-                <div className="p-4">
-                  {(courseDetails?.weeks?.length > 0 ? courseDetails.weeks : ['Week 1']).map((week, wIdx) => {
-                    const daysInWeek = courseDays.filter(d => (d.week || 'Week 1') === week);
-                    if (daysInWeek.length === 0) return null;
-                    const completedInWeek = daysInWeek.filter(d => d.dayNumber < (courseData?.learningProgress || 1)).length;
-                    const totalInWeek = daysInWeek.length;
-                    const weekProgress = totalInWeek > 0 ? Math.round((completedInWeek / totalInWeek) * 100) : 0;
-                    return (
-                      <div key={`toc-week-${wIdx}`} className="mb-4">
-                        <button className="w-full flex items-center justify-between px-3 py-2.5 bg-gray-50 rounded-lg text-sm font-semibold text-gray-800 hover:bg-gray-100 transition-colors">
-                          <span>{week}</span>
-                          <span className="text-xs text-gray-500">{weekProgress}%</span>
-                        </button>
-                        <div className="mt-1">
-                          {daysInWeek.map(day => {
-                            const idx = courseDays.findIndex(d => d._id === day._id);
-                            const isCompleted = day.dayNumber < (courseData?.learningProgress || 1);
-                            const isActive = activeDayIndex === idx;
-                            const isFutureDay = day.dayNumber > (courseData?.learningProgress || 1);
-                            const isLocked = isFutureDay || (isLockedByTime && day.dayNumber === (courseData?.learningProgress || 1));
-                            return (
-                              <button key={day._id}
-                                onClick={() => { if (!isLocked) { setActiveDayIndex(idx); setActiveItemIndex(0); }}}
-                                disabled={isLocked}
-                                className={`w-full flex items-center gap-3 px-3 py-2.5 text-left text-sm transition-colors rounded-md ${isActive ? 'bg-blue-50 text-[#1a1a2e] font-semibold' : isLocked ? 'opacity-40 cursor-not-allowed' : 'hover:bg-gray-50 text-gray-600'}`}>
-                                {isCompleted ? (
-                                  <CheckCircle size={16} className="shrink-0 text-green-500" />
-                                ) : isLocked ? (
-                                  <Lock size={16} className="shrink-0 text-gray-300" />
-                                ) : (
-                                  <div className={`w-4 h-4 rounded-full border-2 shrink-0 ${isActive ? 'border-[#1a1a2e] bg-[#1a1a2e]' : 'border-gray-300'}`} />
-                                )}
-                                <span className={`truncate ${isActive ? 'text-[#1a1a2e] font-semibold' : isCompleted ? 'text-green-700' : ''}`}>{day.title}</span>
-                              </button>
-                            );
-                          })}
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              </aside>
             </div>
-
+            </div>
             {/* Persistent Chat - only show outside Discussion tab */}
             {activeTab !== 'discussion' && currentItem && currentItem.itemType === 'content' && (
               <AskDoubtChat token={token} currentContent={currentItem} />

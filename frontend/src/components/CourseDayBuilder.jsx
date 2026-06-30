@@ -505,6 +505,7 @@ const DayEditor = ({ day, onRefresh }) => {
             {newItemType === 'assessment' && (
               <div className="space-y-4">
                 <input type="text" placeholder="Assessment Title (e.g., Module 1 Quiz)" value={newItemContentForm.title} onChange={e => setNewItemContentForm({...newItemContentForm, title: e.target.value})} className="w-full p-2 rounded-md border text-sm font-bold" required />
+                <input type="text" placeholder="Google Form URL (Optional, overrides custom questions)" value={newItemContentForm.formUrl} onChange={e => setNewItemContentForm({...newItemContentForm, formUrl: e.target.value})} className="w-full p-2 rounded-md border text-sm" />
                 
                 <div className="bg-surface-container p-3 rounded-lg border border-outline-variant/30 space-y-3">
                   <h6 className="font-bold text-sm text-text-primary">Questions ({newItemContentForm.questions.length})</h6>
