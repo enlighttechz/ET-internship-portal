@@ -220,6 +220,7 @@ const CourseViewer = ({ token, student: initialStudent, logout }) => {
   
   const [sidebarOpen, setSidebarOpen] = useState(window.innerWidth > 768);
   const [sidebarMinimized, setSidebarMinimized] = useState(false);
+  const [activeTab, setActiveTab] = useState('activity');
   const [recommendationInboxOpen, setRecommendationInboxOpen] = useState(false);
   const [recommendations, setRecommendations] = useState([]);
   const [isCourseShuttered, setIsCourseShuttered] = useState(false);
@@ -553,537 +554,405 @@ const CourseViewer = ({ token, student: initialStudent, logout }) => {
   const isLockedByTime = timeRemaining !== null && activeDayIndex >= (courseData?.learningProgress - 1 || 0);
 
   return (
-    <div className="bg-background text-on-surface font-body-md flex h-screen overflow-hidden">
+    <div className="bg-[#f5f5f5] text-gray-900 flex flex-col h-screen overflow-hidden font-sans">
       
-      {/* Left Sidebar */}
-      <nav className={`fixed md:sticky inset-y-0 left-0 ${sidebarMinimized ? 'w-20' : 'w-64'} bg-surface/90 backdrop-blur-xl border-r border-outline-variant/30 shadow-2xl flex flex-col z-50 transition-all duration-300 ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'} md:translate-x-0`}>
-        <div className={`p-4 border-b border-outline-variant/30 flex items-center ${sidebarMinimized ? 'justify-center' : 'justify-between'}`}>
-          {!sidebarMinimized && (
-            <div className="flex items-center gap-2 cursor-pointer" onClick={() => navigate('/')}>
-              <img src={ETLogo} alt="Logo" className="w-8 h-8 drop-shadow-md shrink-0" />
-              <span className="font-bold text-lg text-primary truncate">Enlight Techz</span>
-            </div>
-          )}
-          <button onClick={() => setSidebarMinimized(!sidebarMinimized)} className="hidden md:block text-text-dim hover:text-primary shrink-0" title="Toggle Sidebar">
-            <Menu size={sidebarMinimized ? 24 : 20} />
+      {/* GUVI-Style Top Navigation Bar */}
+      <header className="bg-[#1a1a2e] text-white flex items-center justify-between px-4 md:px-6 py-3 shrink-0 z-50 shadow-lg">
+        <div className="flex items-center gap-3">
+          <button onClick={() => setSidebarOpen(true)} className="lg:hidden p-1.5 hover:bg-white/10 rounded-lg transition-colors">
+            <Menu size={22} />
           </button>
-          <button onClick={() => setSidebarOpen(false)} className="md:hidden shrink-0"><X size={20}/></button>
-        </div>
-
-        <div className="flex-1 overflow-y-auto p-4 space-y-4 custom-scrollbar">
-          <button onClick={() => navigate('/dashboard')} className={`w-full flex items-center gap-3 p-3 rounded-xl bg-surface-container hover:bg-primary/10 hover:text-primary transition-colors text-sm font-bold text-text-dim ${sidebarMinimized ? 'justify-center' : ''}`} title={sidebarMinimized ? "Dashboard" : ""}>
-            <Home size={18} className="shrink-0" /> 
-            {!sidebarMinimized && <span>Dashboard</span>}
-          </button>
-
-          <div className="pt-4 border-t border-outline-variant/30">
-            {!sidebarMinimized && <h4 className="text-xs uppercase tracking-wider font-bold text-text-dim mb-3">Course Roadmap</h4>}
-            
-            {(courseDetails?.weeks?.length > 0 ? courseDetails.weeks : ['Week 1']).map((week, wIdx) => {
-              const daysInWeek = courseDays.filter(d => (d.week || 'Week 1') === week);
-              if (daysInWeek.length === 0) return null;
-              
-              return (
-                <div key={`week-${wIdx}`} className="mb-4">
-                  {!sidebarMinimized && <h5 className="text-[10px] uppercase tracking-wider font-bold text-primary mb-2 pl-2">{week}</h5>}
-                  {daysInWeek.map(day => {
-                    const idx = courseDays.findIndex(d => d._id === day._id);
-                    const isFutureDay = day.dayNumber > (courseData?.learningProgress || 1);
-                    const isNextDayLockedByTime = isLockedByTime && day.dayNumber === (courseData?.learningProgress || 1);
-                    const isLocked = isFutureDay || isNextDayLockedByTime;
-                    const isCompleted = day.dayNumber < (courseData?.learningProgress || 1);
-                    const isActive = activeDayIndex === idx;
-                    return (
-                      <button 
-                        key={day._id}
-                        onClick={() => {
-                          if (!isLocked) {
-                            setActiveDayIndex(idx);
-                            setActiveItemIndex(0);
-                            if(window.innerWidth < 768) setSidebarOpen(false);
-                          }
-                        }}
-                        disabled={isLocked}
-                        title={sidebarMinimized ? `Day ${day.dayNumber}: ${day.title}` : ""}
-                        className={`w-full flex flex-col text-left p-3 rounded-xl mb-2 transition-all ${isActive ? 'bg-primary text-white shadow-lg shadow-primary/20 scale-[1.02]' : isLocked ? 'opacity-50 cursor-not-allowed text-text-dim bg-surface-container-highest/20 pointer-events-none' : 'bg-surface-container hover:bg-surface-container-high text-text-primary'}`}
-                      >
-                        <div className={`flex items-center gap-2 ${sidebarMinimized ? 'justify-center w-full' : 'mb-1'}`}>
-                          {isLocked ? <Lock size={14} className="shrink-0" /> : isCompleted && !isActive ? <CheckCircle size={14} className="text-success shrink-0" /> : <PlayCircle size={14} className="shrink-0" />}
-                          {!sidebarMinimized && <span className="font-bold text-sm">Day {day.dayNumber}</span>}
-                        </div>
-                        {!sidebarMinimized && <span className={`text-xs truncate w-full ${isActive ? 'text-white/80' : 'text-text-dim'}`}>{day.title}</span>}
-                      </button>
-                    );
-                  })}
-                </div>
-              );
-            })}
-            
-            {/* Uncategorized days */}
-            {courseDays.filter(d => !(courseDetails?.weeks?.length > 0 ? courseDetails.weeks : ['Week 1']).includes(d.week || 'Week 1')).length > 0 && (
-              <div className="mb-4">
-                {!sidebarMinimized && <h5 className="text-[10px] uppercase tracking-wider font-bold text-text-dim mb-2 pl-2">Other Days</h5>}
-                {courseDays.filter(d => !(courseDetails?.weeks?.length > 0 ? courseDetails.weeks : ['Week 1']).includes(d.week || 'Week 1')).map(day => {
-                  const idx = courseDays.findIndex(d => d._id === day._id);
-                  const isFutureDay = day.dayNumber > (courseData?.learningProgress || 1);
-                  const isNextDayLockedByTime = isLockedByTime && day.dayNumber === (courseData?.learningProgress || 1);
-                  const isLocked = isFutureDay || isNextDayLockedByTime;
-                  const isCompleted = day.dayNumber < (courseData?.learningProgress || 1);
-                  const isActive = activeDayIndex === idx;
-                  return (
-                    <button 
-                      key={day._id}
-                      onClick={() => {
-                        if (!isLocked) {
-                          setActiveDayIndex(idx);
-                          setActiveItemIndex(0);
-                          if(window.innerWidth < 768) setSidebarOpen(false);
-                        }
-                      }}
-                      disabled={isLocked}
-                      title={sidebarMinimized ? `Day ${day.dayNumber}: ${day.title}` : ""}
-                      className={`w-full flex flex-col text-left p-3 rounded-xl mb-2 transition-all ${isActive ? 'bg-primary text-white shadow-lg shadow-primary/20 scale-[1.02]' : isLocked ? 'opacity-50 cursor-not-allowed text-text-dim bg-surface-container-highest/20 pointer-events-none' : 'bg-surface-container hover:bg-surface-container-high text-text-primary'}`}
-                    >
-                      <div className={`flex items-center gap-2 ${sidebarMinimized ? 'justify-center w-full' : 'mb-1'}`}>
-                        {isLocked ? <Lock size={14} className="shrink-0" /> : isCompleted && !isActive ? <CheckCircle size={14} className="text-success shrink-0" /> : <PlayCircle size={14} className="shrink-0" />}
-                        {!sidebarMinimized && <span className="font-bold text-sm">Day {day.dayNumber}</span>}
-                      </div>
-                      {!sidebarMinimized && <span className={`text-xs truncate w-full ${isActive ? 'text-white/80' : 'text-text-dim'}`}>{day.title}</span>}
-                    </button>
-                  );
-                })}
-              </div>
-            )}
+          <div className="flex items-center gap-2 cursor-pointer" onClick={() => navigate('/dashboard')}>
+            <img src={ETLogo} alt="Logo" className="w-7 h-7 drop-shadow-md shrink-0" />
+            <span className="font-bold text-base hidden sm:inline">Enlight Techz</span>
           </div>
+          <span className="hidden md:inline text-white/40 mx-2">|</span>
+          <span className="hidden md:inline text-sm text-white/80 truncate max-w-[300px]">{activeDomain}</span>
         </div>
-
-        <div className="p-4 border-t border-outline-variant/30">
-          <button onClick={() => setRecommendationInboxOpen(true)} className={`w-full flex items-center p-3 rounded-xl bg-accent/10 hover:bg-accent/20 transition-colors text-accent font-bold text-sm mb-3 relative ${sidebarMinimized ? 'justify-center' : 'justify-between'}`} title={sidebarMinimized ? "Inbox" : ""}>
-            <div className={`flex items-center gap-2 ${sidebarMinimized ? 'justify-center' : ''}`}>
-              <Inbox size={18} className="shrink-0" /> 
-              {!sidebarMinimized && <span>Inbox</span>}
-            </div>
-            {unreadCount > 0 && <span className={`bg-error text-white text-[10px] px-2 py-0.5 rounded-full ${sidebarMinimized ? 'absolute -top-1 -right-1' : ''}`}>{unreadCount} {sidebarMinimized ? '' : 'New'}</span>}
+        <div className="flex items-center gap-3">
+          <button 
+            id="btn-bgm"
+            onClick={() => setBgmPlaying(!bgmPlaying)}
+            className={`p-2 rounded-lg transition-colors ${bgmPlaying ? 'bg-white/20 text-white' : 'text-white/60 hover:text-white hover:bg-white/10'} ${showTutorial && tutorialStep === 1 ? 'relative z-[70] ring-4 ring-primary bg-white/30 shadow-2xl scale-125' : ''}`}
+            title="Study Music"
+          >
+            <Music size={18} />
           </button>
-          <button onClick={logout} className={`w-full text-center p-3 text-sm font-bold text-error border border-error/30 rounded-xl hover:bg-error/10 ${sidebarMinimized ? 'flex justify-center' : ''}`} title={sidebarMinimized ? "Log Out" : ""}>
-            {sidebarMinimized ? <X size={18} /> : 'Log Out'}
+          <button onClick={() => setRecommendationInboxOpen(true)} className="p-2 rounded-lg text-white/60 hover:text-white hover:bg-white/10 transition-colors relative">
+            <Inbox size={18} />
+            {unreadCount > 0 && <span className="absolute -top-1 -right-1 bg-red-500 text-white text-[9px] w-4 h-4 rounded-full flex items-center justify-center">{unreadCount}</span>}
+          </button>
+          {gamificationData && student && (
+            <div className="hidden md:block">
+              <GameficationUI studentId={student._id} allStudents={[student]} />
+            </div>
+          )}
+          <button onClick={() => navigate('/dashboard')} className="p-2 rounded-lg text-white/60 hover:text-white hover:bg-white/10 transition-colors" title="Dashboard">
+            <Home size={18} />
+          </button>
+          <button onClick={logout} className="hidden md:flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm text-red-300 hover:bg-red-500/20 transition-colors border border-red-400/30">
+            <X size={14} /> Logout
           </button>
         </div>
-        
-      </nav>
+      </header>
 
-      {/* Main Content */}
-      {/* Main Content */}
-      <main ref={contentAreaRef} className="flex-1 flex flex-col h-full relative overflow-y-auto overflow-x-hidden bg-surface-container-lowest custom-scrollbar">
-        <audio ref={audioRef} src={studyMusic} loop autoPlay={bgmPlaying} />
-        
-
-          {/* Desktop Header */}
-          <header className="hidden md:flex items-center justify-between p-5 bg-surface border-b border-outline-variant/30 shrink-0">
-            <h1 className="font-headline-md text-2xl font-bold text-primary">{activeDomain}</h1>
-            <div className="flex items-center gap-6">
-              <button 
-                id="btn-bgm"
-                onClick={() => setBgmPlaying(!bgmPlaying)}
-                className={`p-2 rounded-full transition-colors flex items-center gap-2 ${bgmPlaying ? 'bg-primary text-white shadow-lg' : 'bg-surface-container text-text-dim hover:text-primary hover:bg-primary/10'} ${showTutorial && tutorialStep === 1 ? 'relative z-[70] ring-4 ring-primary bg-white shadow-2xl scale-125' : ''}`}
-                title="Study Music"
-              >
-                <Music size={20} />
-              </button>
-              {gamificationData && student && (
-                <GameficationUI studentId={student._id} allStudents={[student]} />
-              )}
-            </div>
-          </header>
-
-          {/* Mobile Header */}
-          <header className="md:hidden flex flex-col p-4 bg-surface border-b border-outline-variant/30 shrink-0 gap-3">
-            <div className="flex items-center justify-between w-full">
-              <div className="flex items-center gap-3 overflow-hidden flex-1">
-                <button onClick={() => setSidebarOpen(true)} className="shrink-0 p-1 bg-primary/10 rounded-lg"><Menu size={24} className="text-primary" /></button>
-                <h1 className="font-bold text-primary text-lg truncate flex-1">{activeDomain}</h1>
+      {/* Mobile Sidebar Overlay */}
+      {sidebarOpen && (
+        <div className="fixed inset-0 z-[60] lg:hidden">
+          <div className="absolute inset-0 bg-black/50" onClick={() => setSidebarOpen(false)} />
+          <div className="absolute left-0 top-0 bottom-0 w-72 bg-white shadow-2xl flex flex-col animate-slide-up overflow-hidden">
+            <div className="p-4 border-b border-gray-200 flex items-center justify-between bg-[#1a1a2e] text-white">
+              <div className="flex items-center gap-2">
+                <img src={ETLogo} alt="Logo" className="w-7 h-7" />
+                <span className="font-bold">Course Menu</span>
               </div>
-              <button 
-                id="btn-bgm-mobile"
-                onClick={() => setBgmPlaying(!bgmPlaying)}
-                className={`p-2 rounded-full transition-colors flex items-center gap-2 ml-2 shrink-0 ${bgmPlaying ? 'bg-primary text-white shadow-md' : 'bg-surface-container text-text-dim'}`}
-                title="Study Music"
-              >
-                <Music size={18} />
-              </button>
+              <button onClick={() => setSidebarOpen(false)} className="p-1 hover:bg-white/20 rounded"><X size={20} /></button>
             </div>
-            <div className="flex items-center justify-between gap-2 overflow-x-auto pb-1 no-scrollbar w-full">
-              {gamificationData && student && (
-                <div className="shrink-0">
-                  <GameficationUI studentId={student._id} allStudents={[student]} />
-                </div>
-              )}
-            </div>
-          </header>
-
-          {/* Banners (Not Sticky) */}
-          <div className="flex flex-col">
-            {timeRemaining && !isCourseShuttered && (
-            <div className="bg-primary/10 text-primary px-4 py-3 text-center text-sm font-bold flex items-center justify-center gap-2 shrink-0 border-b border-primary/20 animate-fade-in shadow-sm">
-              <Clock size={18} />
-              Great job today! Your next day will unlock in {timeRemaining}.
-            </div>
-          )}
-
-          {!isCourseShuttered && currentDay && courseData?.learningProgress > currentDay.dayNumber && (
-            <div className="bg-success text-white px-4 py-2 text-center text-sm font-bold flex items-center justify-center gap-2 shrink-0">
-              <CheckCircle size={16} />
-              You have already completed this day. You are currently in review mode.
-              <button 
-                onClick={() => {
-                  const progress = courseData?.learningProgress || 1;
-                  setActiveDayIndex(Math.max(0, progress - 1));
-                  setActiveItemIndex(0);
-                }}
-                className="ml-4 underline hover:text-white/80"
-              >
-                Return to Current Day
-              </button>
-            </div>
-          )}
-
-          </div>
-
-          {/* Sticky Tracker */}
-          <div ref={trackerRef} className="sticky top-0 z-40 flex flex-col shadow-sm">
-            {!isCourseShuttered && currentDay && (
-            <div className="bg-surface shadow-sm border-b border-outline-variant/30 px-4 md:px-8 py-4 flex-none">
-              <h2 className="font-bold text-xl md:text-2xl mb-4 text-on-surface flex items-center gap-3">
-                <span className="bg-primary text-white text-sm px-3 py-1 rounded-full">Day {currentDay.dayNumber}</span>
-                {currentDay.title}
-              </h2>
-              
-              {/* Progress Nodes */}
-              <div className="w-full overflow-x-auto pb-4 custom-scrollbar">
-                <div className="flex items-center min-w-max relative px-2">
-                  <div className="absolute left-2 right-2 top-1/2 h-0.5 bg-outline-variant/50 -translate-y-1/2 z-0"></div>
-                  <div className="absolute left-2 top-1/2 h-0.5 bg-primary -translate-y-1/2 z-0 transition-all duration-500" style={{ width: `calc(${((courseData?.learningProgress > currentDay.dayNumber ? 1 : (activeItemIndex / (Math.max(1, currentDay.items.length - 1))))) * 100}% - 16px)` }}></div>
-                  
-                  <div className="flex gap-8 w-full relative z-10">
-                    {currentDay.items.map((item, idx) => {
-                      const isDayCompleted = courseData?.learningProgress > currentDay.dayNumber;
-                      const isPassed = isDayCompleted || activeItemIndex > idx;
-                      const isCurrent = activeItemIndex === idx;
-                      const canClick = isDayCompleted || idx <= activeItemIndex + 1;
-                      
+            <div className="flex-1 overflow-y-auto p-3">
+              {(courseDetails?.weeks?.length > 0 ? courseDetails.weeks : ['Week 1']).map((week, wIdx) => {
+                const daysInWeek = courseDays.filter(d => (d.week || 'Week 1') === week);
+                if (daysInWeek.length === 0) return null;
+                return (
+                  <div key={`mob-week-${wIdx}`} className="mb-3">
+                    <h5 className="text-[10px] uppercase tracking-wider font-bold text-[#1a1a2e]/60 mb-2 px-2">{week}</h5>
+                    {daysInWeek.map(day => {
+                      const idx = courseDays.findIndex(d => d._id === day._id);
+                      const isFutureDay = day.dayNumber > (courseData?.learningProgress || 1);
+                      const isNextDayLockedByTime = isLockedByTime && day.dayNumber === (courseData?.learningProgress || 1);
+                      const isLocked = isFutureDay || isNextDayLockedByTime;
+                      const isCompleted = day.dayNumber < (courseData?.learningProgress || 1);
+                      const isActive = activeDayIndex === idx;
                       return (
-                        <div 
-                          key={idx} 
-                          onClick={() => { 
-                            if ((!isLockedByTime || isDayCompleted) && canClick) {
-                              if (!isDayCompleted && idx > activeItemIndex && currentItem?.itemType === 'assessment' && !submittedAssessments[currentItem._id]) {
-                                alert("Please mark the assessment as completed before moving forward.");
-                                return;
-                              }
-                              setActiveItemIndex(idx);
-                            }
-                          }}
-                          className={`w-8 h-8 shrink-0 rounded-full flex items-center justify-center border-2 transition-all shadow-sm
-                            ${((!isLockedByTime || isDayCompleted) && canClick) ? 'cursor-pointer' : 'cursor-not-allowed opacity-50'}
-                            ${isPassed ? 'bg-primary border-primary text-white' : isCurrent ? 'bg-white border-primary text-primary ring-4 ring-primary/20 scale-110' : 'bg-surface-container border-outline-variant text-text-dim'}
-                          `}
-                          title={item.title}
-                        >
-                          {item.itemType === 'assessment' ? <Award size={14} /> : item.itemType === 'ai_qa' ? <Bot size={14} /> : item.contentType === 'video' ? <Video size={14} /> : <FileText size={14} />}
-                        </div>
+                        <button key={day._id} onClick={() => { if (!isLocked) { setActiveDayIndex(idx); setActiveItemIndex(0); setSidebarOpen(false); }}} disabled={isLocked}
+                          className={`w-full flex items-center gap-3 text-left px-3 py-2.5 rounded-lg mb-1 text-sm transition-all ${isActive ? 'bg-[#1a1a2e] text-white' : isLocked ? 'opacity-40 cursor-not-allowed' : 'hover:bg-gray-100'}`}>
+                          {isLocked ? <Lock size={14} className="shrink-0 text-gray-400" /> : isCompleted ? <CheckCircle size={14} className="shrink-0 text-green-500" /> : <PlayCircle size={14} className="shrink-0 text-[#1a1a2e]" />}
+                          <div className="min-w-0"><span className="font-semibold block">Day {day.dayNumber}</span><span className="text-xs text-gray-500 truncate block">{day.title}</span></div>
+                        </button>
                       );
                     })}
                   </div>
-                </div>
-              </div>
+                );
+              })}
             </div>
-          )}
+          </div>
         </div>
+      )}
+
+      <main ref={contentAreaRef} className="flex-1 flex flex-col h-full relative overflow-y-auto overflow-x-hidden bg-[#f5f5f5] custom-scrollbar">
+        <audio ref={audioRef} src={studyMusic} loop autoPlay={bgmPlaying} />
+
+        {/* Banners */}
+        {timeRemaining && !isCourseShuttered && (
+          <div className="bg-blue-50 text-[#1a1a2e] px-4 py-2.5 text-center text-sm font-semibold flex items-center justify-center gap-2 border-b border-blue-200">
+            <Clock size={16} /> Next day unlocks in {timeRemaining}.
+          </div>
+        )}
+        {!isCourseShuttered && currentDay && courseData?.learningProgress > currentDay.dayNumber && (
+          <div className="bg-green-600 text-white px-4 py-2 text-center text-sm font-semibold flex items-center justify-center gap-2">
+            <CheckCircle size={16} /> Review mode.
+            <button onClick={() => { setActiveDayIndex(Math.max(0, (courseData?.learningProgress || 1) - 1)); setActiveItemIndex(0); }} className="ml-3 underline hover:text-white/80">Return to Current Day</button>
+          </div>
+        )}
 
         {isCourseShuttered ? (
-          <div className="flex-1 flex items-center justify-center p-8 bg-surface-container-lowest relative z-30">
-            <div className="text-center max-w-lg bg-surface p-10 rounded-3xl shadow-2xl border border-outline-variant/30">
-              <div className="w-24 h-24 bg-error/10 rounded-full flex items-center justify-center mx-auto mb-6 text-error">
-                <Lock size={48} />
-              </div>
-              <h2 className="text-3xl font-bold text-on-surface mb-4">Course Temporarily Locked</h2>
-              <p className="text-text-dim text-lg mb-8 leading-relaxed whitespace-pre-wrap">
-                {shutterNote ? shutterNote : (
-                  <>
-                    The course content is currently closed for maintenance or scheduled downtime. <br/>
-                    <strong>Please visit this course after 1 hour.</strong>
-                  </>
-                )}
-              </p>
-              <button 
-                onClick={() => navigate('/dashboard')}
-                className="bg-primary text-white font-bold px-8 py-3 rounded-xl shadow-md hover:bg-primary/90 transition-colors"
-              >
-                Return to Dashboard
-              </button>
+          <div className="flex-1 flex items-center justify-center p-8">
+            <div className="text-center max-w-lg bg-white p-10 rounded-2xl shadow-xl border border-gray-200">
+              <div className="w-20 h-20 bg-red-50 rounded-full flex items-center justify-center mx-auto mb-6 text-red-500"><Lock size={40} /></div>
+              <h2 className="text-2xl font-bold text-gray-900 mb-3">Course Temporarily Locked</h2>
+              <p className="text-gray-500 mb-6">{shutterNote || 'Please visit after 1 hour.'}</p>
+              <button onClick={() => navigate('/dashboard')} className="bg-[#1a1a2e] text-white font-semibold px-6 py-2.5 rounded-lg hover:bg-[#2a2a4e] transition-colors">Return to Dashboard</button>
             </div>
           </div>
         ) : currentDay ? (
-          <div className="flex-1 flex flex-col relative">
-            <div className="p-4 md:p-8 relative">
-              <div className="max-w-6xl mx-auto pb-20">
-                {dayLoading ? (
-                  <div className="flex flex-col items-center justify-center py-20 text-text-dim">
-                    <div className="w-10 h-10 border-4 border-primary border-t-transparent rounded-full animate-spin mb-4"></div>
-                    <p className="font-bold animate-pulse">Loading content...</p>
+          <>
+            {/* Video Section - Full Width at Top (GUVI style) */}
+            {currentItem?.itemType === 'content' && currentItem?.contentType === 'video' && (
+              <div className="w-full bg-black shrink-0">
+                <div className="max-w-5xl mx-auto">
+                  <div className="relative w-full aspect-video">
+                    <iframe src={currentItem.videoUrl} className="w-full h-full" allowFullScreen loading="lazy"></iframe>
                   </div>
-                ) : isLockedByTime ? (
-                  <div className="flex flex-col items-center justify-center py-24 text-text-dim text-center animate-fade-in">
-                    <div className="w-24 h-24 bg-primary/10 rounded-full flex items-center justify-center mb-6 text-primary shadow-inner">
-                      <Lock size={48} />
-                    </div>
-                    <h2 className="text-3xl font-bold text-text-primary mb-4 font-headline-md">Day Locked</h2>
-                    <p className="max-w-md text-lg leading-relaxed">
-                      Great job completing your tasks! Your next day's content will automatically unlock in <strong className="text-primary">{timeRemaining}</strong>.
-                    </p>
+                </div>
+              </div>
+            )}
+
+            {/* Content Area: Left Content + Right Sidebar */}
+            <div className="flex-1 flex flex-col lg:flex-row max-w-[1400px] mx-auto w-full">
+              
+              {/* Left Content Area */}
+              <div className="flex-1 min-w-0 flex flex-col">
+                
+                {/* GUVI-Style Tab Navigation */}
+                <div ref={trackerRef} className="sticky top-0 z-40 bg-white border-b border-gray-200 shadow-sm">
+                  <div className="flex items-center gap-0 px-4 md:px-8">
+                    {[
+                      { key: 'activity', label: 'Activity' },
+                      { key: 'summary', label: 'Summary' },
+                      { key: 'notes', label: 'Notes' },
+                      { key: 'discussion', label: 'Discussion', badge: true }
+                    ].map(tab => (
+                      <button
+                        key={tab.key}
+                        onClick={() => setActiveTab(tab.key)}
+                        className={`relative px-4 md:px-5 py-3.5 text-sm font-medium transition-colors whitespace-nowrap ${activeTab === tab.key ? 'text-[#1a1a2e] font-semibold' : 'text-gray-500 hover:text-gray-700'}`}
+                      >
+                        {tab.label}
+                        {tab.badge && <span className="ml-1.5 bg-green-500 text-white text-[9px] px-1.5 py-0.5 rounded font-bold align-top">New</span>}
+                        {activeTab === tab.key && <div className="absolute bottom-0 left-0 right-0 h-[3px] bg-[#1a1a2e] rounded-t-full" />}
+                      </button>
+                    ))}
                   </div>
-                ) : currentItem ? (
-                  <div className="glass-card bg-white p-6 md:p-10 rounded-3xl shadow-xl border border-outline-variant/30 animate-fade-in relative overflow-hidden">
-                    {/* Decorative blobs */}
-                    <div className="absolute top-0 right-0 w-64 h-64 bg-primary/5 rounded-full blur-3xl -z-10 pointer-events-none"></div>
+                </div>
 
-                    <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
-                      <h3 className="text-2xl md:text-3xl font-bold text-text-primary break-words">{currentItem.title}</h3>
-
-                      {/* TTS Controls - Only for text content */}
-                      {currentItem.itemType === 'content' && currentItem.contentType !== 'video' && ttsManager.isSupported && (
-                        <div className="flex items-center bg-primary/5 px-3 py-2 rounded-xl border border-primary/20 shrink-0">
-                          <button
-                            id="btn-tts"
-                            onClick={handleTtsPlay}
-                            className={`p-2 rounded-lg transition-colors shrink-0 ${
-                              isListening
-                                ? 'bg-primary text-white'
-                                : 'bg-surface hover:bg-primary/10 text-primary'
-                            } ${showTutorial && tutorialStep === 2 ? 'relative z-[70] ring-4 ring-primary bg-white shadow-2xl scale-125' : ''}`}
-                            title={isListening ? 'Stop listening' : 'Listen to content'}
-                          >
-                            {isListening ? <VolumeX size={20} /> : <Volume2 size={20} />}
-                          </button>
-
-                          <div className={`flex items-center overflow-hidden transition-all duration-500 ease-in-out ${isListening ? 'max-w-[400px] opacity-100 ml-3 gap-3' : 'max-w-0 opacity-0 ml-0 gap-0'}`}>
-                            <button
-                              onClick={handleTtsPause}
-                              className={`p-2 rounded-lg transition-colors shrink-0 ${isPaused ? 'bg-primary text-white shadow-inner' : 'bg-surface hover:bg-primary/10 text-primary'}`}
-                              title={isPaused ? "Resume" : "Pause"}
-                            >
-                              {isPaused ? <Play size={16} fill="currentColor" /> : <Pause size={16} />}
-                            </button>
-                            <button
-                              onClick={handleTtsStop}
-                              className="p-2 rounded-lg bg-surface hover:bg-error hover:text-white active:bg-error/80 text-text-dim transition-colors shrink-0"
-                              title="Stop"
-                            >
-                              <Square size={14} fill="currentColor" />
-                            </button>
-                            <input
-                              type="range"
-                              min="0.5"
-                              max="2"
-                              step="0.1"
-                              value={ttsRate}
-                              onChange={(e) => setTtsRate(parseFloat(e.target.value))}
-                              className="w-20 md:w-24 shrink-0 accent-primary"
-                              title="Speech rate"
-                            />
-                            <span className="text-xs text-text-dim font-bold shrink-0">{ttsRate.toFixed(1)}x</span>
-                          </div>
+                {/* Tab Content */}
+                <div className="flex-1 p-4 md:p-8">
+                  
+                  {activeTab === 'activity' && (
+                    <div className="max-w-4xl">
+                      {dayLoading ? (
+                        <div className="flex flex-col items-center justify-center py-20 text-gray-400">
+                          <div className="w-10 h-10 border-4 border-[#1a1a2e] border-t-transparent rounded-full animate-spin mb-4"></div>
+                          <p className="font-semibold animate-pulse">Loading content...</p>
                         </div>
-                      )}
-                    </div>
-                    
-                    {currentItem.itemType === 'content' ? (
-                      <div id="course-content-area" className={`prose prose-lg max-w-none prose-headings:text-primary prose-a:text-secondary ${showTutorial && tutorialStep === 3 ? 'relative z-[70] bg-white p-6 rounded-2xl ring-4 ring-primary shadow-2xl' : ''}`}>
-                        {currentItem.contentType === 'video' ? (
-                           <div className="relative w-full aspect-video rounded-2xl overflow-hidden shadow-lg border border-outline-variant/20 mb-8 bg-black">
-                             <iframe src={currentItem.videoUrl} className="w-full h-full" allowFullScreen loading="lazy"></iframe>
-                           </div>
-                        ) : currentItem.contentType === 'image' ? (
-                           <ImageCarousel 
-                             images={currentItem.imageUrl?.split(',').map(url => url.trim()).filter(Boolean)} 
-                             title={currentItem.title} 
-                           />
-                        ) : (
-                           <div dangerouslySetInnerHTML={{ __html: currentItem.body?.replace(/<img /g, '<img loading="lazy" style="max-width: 100%; height: auto;" ') }} />
-                        )}
-                      </div>
-                    ) : currentItem.itemType === 'assessment' ? (
-                      <div className="assessment-container">
-                        <div className="bg-accent/10 border border-accent/20 p-6 rounded-2xl mb-8 flex justify-between items-center">
-                          <div>
-                            <h4 className="font-bold text-accent text-xl flex items-center gap-2 mb-2"><Award /> Interactive Assessment</h4>
-                            <p className="text-text-dim">Test your understanding of today's topics before moving forward.</p>
-                          </div>
+                      ) : isLockedByTime ? (
+                        <div className="flex flex-col items-center justify-center py-20 text-gray-400 text-center">
+                          <div className="w-20 h-20 bg-blue-50 rounded-full flex items-center justify-center mb-6 text-[#1a1a2e]"><Lock size={40} /></div>
+                          <h2 className="text-2xl font-bold text-gray-900 mb-3">Day Locked</h2>
+                          <p className="max-w-md text-gray-500">Next day unlocks in <strong className="text-[#1a1a2e]">{timeRemaining}</strong>.</p>
                         </div>
-
-                        {currentItem.questions && currentItem.questions.length > 0 ? (
-                          <div className="mb-8">
-                            {submittedAssessments[currentItem._id] ? (
-                              <div className="bg-success/10 border border-success/30 p-8 rounded-2xl text-center">
-                                <div className="w-16 h-16 bg-success text-white rounded-full flex items-center justify-center mx-auto mb-4"><CheckCircle size={32} /></div>
-                                <h3 className="text-xl font-bold text-success mb-2">Assessment Completed!</h3>
-                                <p className="text-text-dim">You have successfully submitted your answers.</p>
+                      ) : currentItem ? (
+                        <>
+                          {/* Item Title + TTS */}
+                          <div className="flex flex-col md:flex-row md:items-start justify-between gap-3 mb-6">
+                            <div className="flex items-center gap-3">
+                              <span className="bg-gray-100 text-gray-500 w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold shrink-0">{activeItemIndex + 1}</span>
+                              <h3 className="text-xl md:text-2xl font-bold text-gray-900">{currentItem.title}</h3>
+                            </div>
+                            {currentItem.itemType === 'content' && currentItem.contentType !== 'video' && ttsManager.isSupported && (
+                              <div className="flex items-center bg-gray-50 px-3 py-2 rounded-lg border border-gray-200 shrink-0">
+                                <button id="btn-tts" onClick={handleTtsPlay}
+                                  className={`p-2 rounded-lg transition-colors shrink-0 ${isListening ? 'bg-[#1a1a2e] text-white' : 'bg-white hover:bg-gray-100 text-[#1a1a2e] border border-gray-200'} ${showTutorial && tutorialStep === 2 ? 'relative z-[70] ring-4 ring-[#1a1a2e] shadow-2xl scale-125' : ''}`}
+                                  title={isListening ? 'Stop' : 'Listen'}>
+                                  {isListening ? <VolumeX size={18} /> : <Volume2 size={18} />}
+                                </button>
+                                <div className={`flex items-center overflow-hidden transition-all duration-500 ${isListening ? 'max-w-[400px] opacity-100 ml-3 gap-2' : 'max-w-0 opacity-0 ml-0 gap-0'}`}>
+                                  <button onClick={handleTtsPause} className={`p-1.5 rounded-lg transition-colors shrink-0 ${isPaused ? 'bg-[#1a1a2e] text-white' : 'bg-white hover:bg-gray-100 text-gray-600 border border-gray-200'}`}>{isPaused ? <Play size={14} fill="currentColor" /> : <Pause size={14} />}</button>
+                                  <button onClick={handleTtsStop} className="p-1.5 rounded-lg bg-white hover:bg-red-50 text-gray-500 border border-gray-200 shrink-0"><Square size={12} fill="currentColor" /></button>
+                                  <input type="range" min="0.5" max="2" step="0.1" value={ttsRate} onChange={(e) => setTtsRate(parseFloat(e.target.value))} className="w-16 shrink-0 accent-[#1a1a2e]" />
+                                  <span className="text-xs text-gray-500 font-semibold shrink-0">{ttsRate.toFixed(1)}x</span>
+                                </div>
                               </div>
-                            ) : (
-                              <Assessment 
-                                assessment={currentItem} 
-                                onSubmit={(answers) => {
-                                  // In a real app we'd validate answers, here we just mark it complete
-                                  handleSubmitAssessment();
-                                }} 
-                              />
                             )}
                           </div>
-                        ) : currentItem.formUrl ? (
-                          <>
-                            <div className="w-full relative rounded-2xl overflow-hidden border border-outline-variant/30 mb-8 h-[600px] bg-white">
-                              <iframe src={currentItem.formUrl} width="100%" height="100%" frameBorder="0" marginHeight="0" marginWidth="0">Loading…</iframe>
+
+                          {/* Content Body */}
+                          {currentItem.itemType === 'content' ? (
+                            <div id="course-content-area" className={`prose prose-lg max-w-none prose-headings:text-gray-900 prose-a:text-blue-600 ${showTutorial && tutorialStep === 3 ? 'relative z-[70] bg-white p-6 rounded-xl ring-4 ring-[#1a1a2e] shadow-2xl' : ''}`}>
+                              {currentItem.contentType === 'video' ? null : currentItem.contentType === 'image' ? (
+                                <ImageCarousel images={currentItem.imageUrl?.split(',').map(url => url.trim()).filter(Boolean)} title={currentItem.title} />
+                              ) : (
+                                <div className="bg-white rounded-xl p-6 md:p-8 border border-gray-200 shadow-sm" dangerouslySetInnerHTML={{ __html: currentItem.body?.replace(/<img /g, '<img loading="lazy" style="max-width: 100%; height: auto;" ') }} />
+                              )}
                             </div>
-                            <div className="text-center">
-                              <button 
-                                disabled={submittedAssessments[currentItem._id]}
-                                onClick={handleSubmitAssessment} 
-                                className={`px-8 py-3 font-bold rounded-xl shadow-md transition-colors ${submittedAssessments[currentItem._id] ? 'bg-surface-container-highest text-text-dim cursor-not-allowed' : 'bg-success text-white hover:bg-success/90'}`}
-                              >
-                                {submittedAssessments[currentItem._id] ? 'Submitted' : 'Mark Assessment as Completed'}
-                              </button>
-                            </div>
-                          </>
-                        ) : (
-                          <div className="p-8 text-center border-2 border-dashed border-outline-variant rounded-2xl mb-8">
-                            <p className="text-text-dim italic">Assessment link or questions are not configured for this module.</p>
-                          </div>
-                        )}
-                      </div>
-                    ) : (
-                      <div className="ai-qa-container max-w-2xl mx-auto">
-                        <div className="bg-success/10 border border-success/20 p-6 rounded-2xl mb-8 flex justify-between items-center">
-                          <div>
-                            <h4 className="font-bold text-success text-xl flex items-center gap-2 mb-2"><Bot /> Automated Q&A Challenge</h4>
-                            <p className="text-text-dim">Test your knowledge. An AI explanation awaits!</p>
-                          </div>
-                        </div>
-                        
-                        <div className="bg-surface border border-outline-variant rounded-2xl p-6 md:p-8 shadow-sm mb-8">
-                          <h3 className="text-xl font-bold text-text-primary mb-6">{currentItem.question}</h3>
-                          
-                          {!aiEvaluation ? (
-                            <div className="space-y-4">
-                              <textarea 
-                                value={studentAnswer} 
-                                onChange={(e) => setStudentAnswer(e.target.value)} 
-                                placeholder="Type your answer here... Be descriptive!" 
-                                className="w-full p-4 rounded-xl border border-outline-variant focus:border-primary focus:ring-1 focus:ring-primary outline-none min-h-[150px] resize-y"
-                                disabled={isEvaluating}
-                              ></textarea>
-                              
-                              <button 
-                                disabled={!studentAnswer.trim() || isEvaluating}
-                                onClick={handleEvaluateAnswer}
-                                className="w-full py-3 bg-primary text-white font-bold rounded-xl disabled:opacity-50 hover:bg-primary/90 transition-colors shadow-md flex justify-center items-center gap-2"
-                              >
-                                {isEvaluating ? <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div> : <Bot size={20} />}
-                                {isEvaluating ? 'Evaluating...' : 'Submit Answer for AI Grading'}
-                              </button>
+                          ) : currentItem.itemType === 'assessment' ? (
+                            <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
+                              <div className="bg-orange-50 border-b border-orange-200 p-5 flex items-center gap-3">
+                                <div className="w-10 h-10 bg-orange-100 rounded-full flex items-center justify-center text-orange-600"><Award size={20} /></div>
+                                <div>
+                                  <h4 className="font-bold text-gray-900">Interactive Assessment</h4>
+                                  <p className="text-sm text-gray-500">Test your understanding before moving forward.</p>
+                                </div>
+                              </div>
+                              <div className="p-5 md:p-8">
+                                {currentItem.questions && currentItem.questions.length > 0 ? (
+                                  submittedAssessments[currentItem._id] ? (
+                                    <div className="bg-green-50 border border-green-200 p-8 rounded-xl text-center">
+                                      <CheckCircle size={40} className="text-green-500 mx-auto mb-3" />
+                                      <h3 className="text-lg font-bold text-green-700 mb-1">Assessment Completed!</h3>
+                                      <p className="text-gray-500 text-sm">You have successfully submitted your answers.</p>
+                                    </div>
+                                  ) : (
+                                    <Assessment assessment={currentItem} onSubmit={() => handleSubmitAssessment()} />
+                                  )
+                                ) : currentItem.formUrl ? (
+                                  <>
+                                    <div className="w-full rounded-xl overflow-hidden border border-gray-200 mb-6 h-[500px] bg-white">
+                                      <iframe src={currentItem.formUrl} width="100%" height="100%" frameBorder="0"></iframe>
+                                    </div>
+                                    <div className="text-center">
+                                      <button disabled={submittedAssessments[currentItem._id]} onClick={handleSubmitAssessment}
+                                        className={`px-8 py-2.5 font-semibold rounded-lg transition-colors ${submittedAssessments[currentItem._id] ? 'bg-gray-200 text-gray-400 cursor-not-allowed' : 'bg-green-600 text-white hover:bg-green-700'}`}>
+                                        {submittedAssessments[currentItem._id] ? 'Submitted' : 'Mark as Completed'}
+                                      </button>
+                                    </div>
+                                  </>
+                                ) : (
+                                  <div className="p-8 text-center border-2 border-dashed border-gray-200 rounded-xl"><p className="text-gray-400 italic">Assessment not configured.</p></div>
+                                )}
+                              </div>
                             </div>
                           ) : (
-                            <div className={`mt-4 p-6 rounded-2xl border ${aiEvaluation.isCorrect ? 'bg-success/5 border-success/30' : 'bg-error/5 border-error/30'} animate-fade-in`}>
-                              <h4 className={`font-bold flex items-center gap-2 mb-3 text-lg ${aiEvaluation.isCorrect ? 'text-success' : 'text-error'}`}>
-                                {aiEvaluation.isCorrect ? <><CheckCircle size={22}/> Correct! Amazing job.</> : <><X size={22}/> Incorrect. Let's try again:</>}
-                              </h4>
-                              
-                              <div className="p-4 bg-white rounded-xl border border-outline-variant/50 relative shadow-sm mb-6">
-                                <div className="absolute -top-3 -left-3 bg-primary text-white p-1.5 rounded-full shadow-md"><Bot size={16}/></div>
-                                <p className="text-text-primary text-sm leading-relaxed ml-2">
-                                  <span className="font-bold text-primary mr-1">AI Feedback:</span> 
-                                  {aiEvaluation.aiReason}
-                                </p>
+                            /* AI Q&A */
+                            <div className="max-w-2xl">
+                              <div className="bg-emerald-50 border border-emerald-200 p-5 rounded-xl mb-6 flex items-center gap-3">
+                                <Bot className="text-emerald-600" />
+                                <div><h4 className="font-bold text-gray-900">AI Q&A Challenge</h4><p className="text-sm text-gray-500">Test your knowledge!</p></div>
                               </div>
-                              
-                              <div className="flex gap-4">
-                                {!aiEvaluation.isCorrect && (
-                                  <button onClick={() => setAiEvaluation(null)} className="flex-1 py-3 border border-primary text-primary font-bold rounded-xl shadow-sm hover:bg-primary/5 transition-colors">
-                                    Try Again
-                                  </button>
+                              <div className="bg-white border border-gray-200 rounded-xl p-6 shadow-sm">
+                                <h3 className="text-lg font-bold text-gray-900 mb-5">{currentItem.question}</h3>
+                                {!aiEvaluation ? (
+                                  <div className="space-y-4">
+                                    <textarea value={studentAnswer} onChange={(e) => setStudentAnswer(e.target.value)} placeholder="Type your answer..." className="w-full p-4 rounded-lg border border-gray-300 focus:border-[#1a1a2e] focus:ring-1 focus:ring-[#1a1a2e] outline-none min-h-[120px] resize-y mb-0" disabled={isEvaluating} />
+                                    <button disabled={!studentAnswer.trim() || isEvaluating} onClick={handleEvaluateAnswer} className="w-full py-3 bg-[#1a1a2e] text-white font-semibold rounded-lg disabled:opacity-50 hover:bg-[#2a2a4e] transition-colors flex justify-center items-center gap-2">
+                                      {isEvaluating ? <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" /> : <Bot size={18} />}
+                                      {isEvaluating ? 'Evaluating...' : 'Submit for AI Grading'}
+                                    </button>
+                                  </div>
+                                ) : (
+                                  <div className={`p-5 rounded-xl border ${aiEvaluation.isCorrect ? 'bg-green-50 border-green-200' : 'bg-red-50 border-red-200'}`}>
+                                    <h4 className={`font-bold flex items-center gap-2 mb-3 ${aiEvaluation.isCorrect ? 'text-green-700' : 'text-red-700'}`}>
+                                      {aiEvaluation.isCorrect ? <><CheckCircle size={20}/> Correct!</> : <><X size={20}/> Incorrect</>}
+                                    </h4>
+                                    <div className="p-4 bg-white rounded-lg border border-gray-200 mb-4 text-sm text-gray-700"><strong className="text-[#1a1a2e]">AI Feedback:</strong> {aiEvaluation.aiReason}</div>
+                                    <div className="flex gap-3">
+                                      {!aiEvaluation.isCorrect && <button onClick={() => setAiEvaluation(null)} className="flex-1 py-2.5 border border-[#1a1a2e] text-[#1a1a2e] font-semibold rounded-lg hover:bg-gray-50">Try Again</button>}
+                                      <button onClick={() => handleNext()} className={`${!aiEvaluation.isCorrect ? 'flex-1' : 'w-full'} py-2.5 bg-[#1a1a2e] text-white font-semibold rounded-lg hover:bg-[#2a2a4e]`}>Continue</button>
+                                    </div>
+                                  </div>
                                 )}
-                                <button onClick={() => handleNext()} className={`${!aiEvaluation.isCorrect ? 'flex-1' : 'w-full'} py-3 bg-primary text-white font-bold rounded-xl shadow-md hover:bg-primary/90 transition-colors`}>
-                                  Continue to Next Module
-                                </button>
                               </div>
                             </div>
                           )}
-                        </div>
+
+                          {/* Navigation - GUVI Style */}
+                          <div className="flex justify-between items-center mt-8 mb-4">
+                            <button onClick={handlePrev} disabled={activeDayIndex === 0 && activeItemIndex === 0}
+                              className="flex items-center gap-2 px-5 py-2.5 rounded-lg border border-gray-300 text-gray-700 font-semibold hover:bg-gray-50 transition-colors disabled:opacity-40">
+                              <ChevronLeft size={18} /> Previous
+                            </button>
+                            <button id="btn-next" onClick={handleNext} disabled={isLockedByTime}
+                              className={`flex items-center gap-2 px-6 py-2.5 rounded-lg font-semibold transition-all shadow-sm ${isLockedByTime ? 'bg-gray-200 text-gray-400 cursor-not-allowed' : 'bg-[#1a1a2e] text-white hover:bg-[#2a2a4e]'} ${showTutorial && tutorialStep === 4 ? 'relative z-[70] ring-4 ring-[#1a1a2e] shadow-2xl scale-110' : ''}`}>
+                              {activeItemIndex === currentDay.items.length - 1 ? 'Finish Day' : 'Next'} <ChevronRight size={18} />
+                            </button>
+                          </div>
+                        </>
+                      ) : (<p className="text-gray-400">No content available.</p>)}
+                    </div>
+                  )}
+
+                  {activeTab === 'summary' && (
+                    <div className="max-w-4xl bg-white rounded-xl border border-gray-200 p-6 md:p-8 shadow-sm">
+                      <h3 className="text-xl font-bold text-gray-900 mb-4 flex items-center gap-2"><FileText size={20} className="text-[#1a1a2e]" /> Day {currentDay?.dayNumber} Summary</h3>
+                      <p className="text-gray-600 leading-relaxed mb-4">{currentDay?.title}</p>
+                      <div className="border-t border-gray-100 pt-4">
+                        <p className="text-sm text-gray-500">This day contains <strong>{currentDay?.items?.length || 0}</strong> modules including content, videos, and assessments.</p>
                       </div>
-                    )}
-                  </div>
-                ) : (
-                  <p>No content available.</p>
-                )}
-                
-                {/* Navigation Buttons below content */}
-                <div className="flex justify-between items-center mt-8">
-                  <button 
-                    onClick={handlePrev}
-                    disabled={activeDayIndex === 0 && activeItemIndex === 0}
-                    className="flex items-center gap-2 px-6 py-3 rounded-full border border-primary text-primary font-bold hover:bg-primary/5 transition-colors disabled:opacity-50"
-                  >
-                    <ChevronLeft size={20} /> Previous
-                  </button>
-                  <button 
-                    id="btn-next"
-                    onClick={handleNext}
-                    disabled={isLockedByTime}
-                    className={`flex items-center gap-2 px-8 py-3 rounded-full font-bold shadow-lg transition-all ${isLockedByTime ? 'bg-surface-container-highest text-text-dim cursor-not-allowed' : 'bg-primary text-white shadow-primary/30 hover:bg-primary-container hover:scale-105'} ${showTutorial && tutorialStep === 4 ? 'relative z-[70] ring-4 ring-primary shadow-2xl scale-110' : ''}`}
-                  >
-                    {activeItemIndex === currentDay.items.length - 1 ? 'Finish Day' : 'Next Item'} <ChevronRight size={20} />
-                  </button>
+                    </div>
+                  )}
+
+                  {activeTab === 'notes' && (
+                    <div className="max-w-4xl bg-white rounded-xl border border-gray-200 p-6 md:p-8 shadow-sm">
+                      <h3 className="text-xl font-bold text-gray-900 mb-4">📝 Your Notes</h3>
+                      <textarea placeholder="Take notes while learning..." className="w-full min-h-[300px] p-4 rounded-lg border border-gray-200 focus:border-[#1a1a2e] focus:ring-1 focus:ring-[#1a1a2e] outline-none resize-y text-gray-700 mb-0" />
+                    </div>
+                  )}
+
+                  {activeTab === 'discussion' && (
+                    <div className="max-w-4xl bg-white rounded-xl border border-gray-200 p-6 md:p-8 shadow-sm">
+                      <h3 className="text-xl font-bold text-gray-900 mb-4 flex items-center gap-2"><MessageSquare size={20} className="text-[#1a1a2e]" /> Discussion</h3>
+                      {currentItem && currentItem.itemType === 'content' ? (
+                        <AskDoubtChat token={token} currentContent={currentItem} />
+                      ) : (
+                        <p className="text-gray-400 text-center py-10">Discussion is available for content modules.</p>
+                      )}
+                    </div>
+                  )}
                 </div>
               </div>
+
+              {/* Right Sidebar - Table of Contents (GUVI Style) */}
+              <aside className="hidden lg:block w-[320px] shrink-0 border-l border-gray-200 bg-white overflow-y-auto h-[calc(100vh-52px)] sticky top-0">
+                <div className="p-5 border-b border-gray-200">
+                  <h3 className="text-lg font-bold text-gray-900">Table of contents</h3>
+                </div>
+                <div className="p-4">
+                  {(courseDetails?.weeks?.length > 0 ? courseDetails.weeks : ['Week 1']).map((week, wIdx) => {
+                    const daysInWeek = courseDays.filter(d => (d.week || 'Week 1') === week);
+                    if (daysInWeek.length === 0) return null;
+                    const completedInWeek = daysInWeek.filter(d => d.dayNumber < (courseData?.learningProgress || 1)).length;
+                    const totalInWeek = daysInWeek.length;
+                    const weekProgress = totalInWeek > 0 ? Math.round((completedInWeek / totalInWeek) * 100) : 0;
+                    return (
+                      <div key={`toc-week-${wIdx}`} className="mb-4">
+                        <button className="w-full flex items-center justify-between px-3 py-2.5 bg-gray-50 rounded-lg text-sm font-semibold text-gray-800 hover:bg-gray-100 transition-colors">
+                          <span>{week}</span>
+                          <span className="text-xs text-gray-500">{weekProgress}%</span>
+                        </button>
+                        <div className="mt-1">
+                          {daysInWeek.map(day => {
+                            const idx = courseDays.findIndex(d => d._id === day._id);
+                            const isCompleted = day.dayNumber < (courseData?.learningProgress || 1);
+                            const isActive = activeDayIndex === idx;
+                            const isFutureDay = day.dayNumber > (courseData?.learningProgress || 1);
+                            const isLocked = isFutureDay || (isLockedByTime && day.dayNumber === (courseData?.learningProgress || 1));
+                            return (
+                              <button key={day._id}
+                                onClick={() => { if (!isLocked) { setActiveDayIndex(idx); setActiveItemIndex(0); }}}
+                                disabled={isLocked}
+                                className={`w-full flex items-center gap-3 px-3 py-2.5 text-left text-sm transition-colors rounded-md ${isActive ? 'bg-blue-50 text-[#1a1a2e] font-semibold' : isLocked ? 'opacity-40 cursor-not-allowed' : 'hover:bg-gray-50 text-gray-600'}`}>
+                                {isCompleted ? (
+                                  <CheckCircle size={16} className="shrink-0 text-green-500" />
+                                ) : isLocked ? (
+                                  <Lock size={16} className="shrink-0 text-gray-300" />
+                                ) : (
+                                  <div className={`w-4 h-4 rounded-full border-2 shrink-0 ${isActive ? 'border-[#1a1a2e] bg-[#1a1a2e]' : 'border-gray-300'}`} />
+                                )}
+                                <span className={`truncate ${isActive ? 'text-[#1a1a2e] font-semibold' : isCompleted ? 'text-green-700' : ''}`}>{day.title}</span>
+                              </button>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </aside>
             </div>
-            
-            {/* Persistent Chat */}
-            {currentItem && currentItem.itemType === 'content' && (
+
+            {/* Persistent Chat - only show outside Discussion tab */}
+            {activeTab !== 'discussion' && currentItem && currentItem.itemType === 'content' && (
               <AskDoubtChat token={token} currentContent={currentItem} />
             )}
-          </div>
+          </>
         ) : (
           <div className="flex-1 flex items-center justify-center p-8">
             <div className="text-center max-w-md">
-              <div className="w-20 h-20 bg-surface-container-highest rounded-full flex items-center justify-center mx-auto mb-4 text-text-dim">
-                <Lock size={32} />
-              </div>
-              <h3 className="text-2xl font-bold text-text-primary mb-2">No Course Content</h3>
-              <p className="text-text-dim">There is no content available for this domain yet.</p>
+              <div className="w-20 h-20 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4 text-gray-400"><Lock size={32} /></div>
+              <h3 className="text-2xl font-bold text-gray-900 mb-2">No Course Content</h3>
+              <p className="text-gray-500">There is no content available for this domain yet.</p>
             </div>
           </div>
         )}
       </main>
 
-      {/* Recommendation Inbox Slide-out */}
       {recommendationInboxOpen && (
         <div className="fixed inset-0 z-[60] flex justify-end bg-black/40 backdrop-blur-sm animate-fade-in">
-          <div className="w-full max-w-sm bg-surface h-full shadow-2xl flex flex-col animate-slide-up border-l border-outline-variant/30">
-            <div className="p-4 border-b border-outline-variant/30 bg-primary/10 flex items-center justify-between">
-              <h3 className="font-bold text-primary flex items-center gap-2"><Inbox /> Mentor Chat</h3>
-              <button onClick={() => setRecommendationInboxOpen(false)} className="text-primary/70 hover:text-primary"><X/></button>
+          <div className="w-full max-w-sm bg-white h-full shadow-2xl flex flex-col border-l border-gray-200">
+            <div className="p-4 border-b border-gray-200 bg-[#1a1a2e] text-white flex items-center justify-between">
+              <h3 className="font-bold flex items-center gap-2"><Inbox size={18} /> Mentor Chat</h3>
+              <button onClick={() => setRecommendationInboxOpen(false)} className="text-white/70 hover:text-white"><X size={20}/></button>
             </div>
-            
-            <div className="flex-1 overflow-y-auto p-4 space-y-4">
+            <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-gray-50">
               {recommendations.length === 0 ? (
-                <p className="text-center text-text-dim text-sm mt-10">No messages from your mentor yet.</p>
+                <p className="text-center text-gray-400 text-sm mt-10">No messages from your mentor yet.</p>
               ) : (
                 recommendations.map((msg, idx) => {
                   const isStudent = msg.senderRole === 'Student';
                   return (
                     <div key={idx} className={`flex ${isStudent ? 'justify-end' : 'justify-start'}`}>
-                      <div className={`max-w-[85%] p-3 rounded-2xl ${isStudent ? 'bg-surface-container-highest rounded-tr-sm' : 'bg-primary text-white rounded-tl-sm'}`}>
-                        <p className="text-sm whitespace-pre-wrap">{msg.text}</p>
-                        <span className={`text-[9px] block mt-1 ${isStudent ? 'text-text-dim' : 'text-white/70'}`}>
+                      <div className={`max-w-[85%] p-3 rounded-2xl text-sm ${isStudent ? 'bg-white border border-gray-200 text-gray-800 rounded-tr-sm' : 'bg-[#1a1a2e] text-white rounded-tl-sm'}`}>
+                        <p className="whitespace-pre-wrap">{msg.text}</p>
+                        <span className={`text-[9px] block mt-1 ${isStudent ? 'text-gray-400' : 'text-white/60'}`}>
                           {new Date(msg.timestamp).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
                         </span>
                       </div>
@@ -1093,16 +962,15 @@ const CourseViewer = ({ token, student: initialStudent, logout }) => {
               )}
               <div ref={messagesEndRef} />
             </div>
-
-            <div className="p-4 border-t border-outline-variant/30 bg-surface">
+            <div className="p-4 border-t border-gray-200 bg-white">
               <form onSubmit={sendReply} className="flex gap-2">
-                <input 
-                  type="text" value={replyText} onChange={e=>setReplyText(e.target.value)}
+                <input
+                  type="text" value={replyText} onChange={e => setReplyText(e.target.value)}
                   placeholder="Reply to mentor..."
-                  className="flex-1 bg-surface-container-lowest border border-outline-variant rounded-full px-4 py-2 text-sm focus:border-primary focus:ring-1 focus:ring-primary outline-none"
+                  className="flex-1 border border-gray-300 rounded-full px-4 py-2 text-sm focus:border-[#1a1a2e] outline-none"
                 />
-                <button type="submit" disabled={!replyText.trim()} className="bg-primary text-white w-10 h-10 rounded-full flex items-center justify-center disabled:opacity-50 hover:bg-primary/90 transition-colors">
-                  <Send size={16} className="ml-1" />
+                <button type="submit" disabled={!replyText.trim()} className="bg-[#1a1a2e] text-white w-10 h-10 rounded-full flex items-center justify-center disabled:opacity-50 hover:bg-[#2a2a4e]">
+                  <Send size={16} className="ml-0.5" />
                 </button>
               </form>
             </div>
@@ -1113,33 +981,30 @@ const CourseViewer = ({ token, student: initialStudent, logout }) => {
       {/* Tutorial Overlay */}
       {showTutorial && (
         <div className="fixed inset-0 z-[60] bg-black/70 backdrop-blur-sm flex items-center justify-center p-4">
-          <div 
-            className="bg-white rounded-3xl p-8 max-w-md w-full shadow-2xl transform scale-100 animate-fade-in text-center relative z-[70] transition-all duration-500"
+          <div
+            className="bg-white rounded-3xl p-8 max-w-md w-full shadow-2xl animate-fade-in text-center relative z-[70] transition-all duration-500"
             style={Object.keys(tooltipStyle).length > 0 ? tooltipStyle : {}}
           >
-            {/* Optional Arrow */}
             {Object.keys(tooltipStyle).length > 0 && (
-              <div 
+              <div
                 className="absolute w-6 h-6 bg-white rotate-45 transform"
-                style={{ 
+                style={{
                   top: tooltipStyle.top && parseInt(tooltipStyle.top) > window.innerHeight / 2 ? 'auto' : '-10px',
                   bottom: tooltipStyle.top && parseInt(tooltipStyle.top) > window.innerHeight / 2 ? '-10px' : 'auto',
                   left: 'calc(50% - 12px)'
                 }}
               />
             )}
-            
-            <div className="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-4 relative z-10">
-              <span className="text-primary font-bold text-2xl">{tutorialStep}</span>
+            <div className="w-16 h-16 bg-[#1a1a2e]/10 rounded-full flex items-center justify-center mx-auto mb-4">
+              <span className="text-[#1a1a2e] font-bold text-2xl">{tutorialStep}</span>
             </div>
-            <h3 className="text-2xl font-bold text-text-primary mb-2">{tutorialContent[tutorialStep].title}</h3>
-            <p className="text-text-dim mb-8 text-lg">{tutorialContent[tutorialStep].text}</p>
-            
+            <h3 className="text-2xl font-bold text-gray-900 mb-2">{tutorialContent[tutorialStep].title}</h3>
+            <p className="text-gray-500 mb-8 text-lg">{tutorialContent[tutorialStep].text}</p>
             <div className="flex gap-4">
-              <button onClick={skipTutorial} className="flex-1 py-3 text-text-dim font-bold hover:bg-surface-container rounded-xl transition-colors">
+              <button onClick={skipTutorial} className="flex-1 py-3 text-gray-500 font-bold hover:bg-gray-100 rounded-xl transition-colors">
                 Skip
               </button>
-              <button onClick={handleNextTutorial} className="flex-[2] py-3 bg-primary text-white font-bold rounded-xl shadow-md hover:bg-primary/90 transition-colors">
+              <button onClick={handleNextTutorial} className="flex-[2] py-3 bg-[#1a1a2e] text-white font-bold rounded-xl hover:bg-[#2a2a4e] transition-colors">
                 {tutorialStep === 4 ? 'Got it!' : 'Next'}
               </button>
             </div>
@@ -1151,3 +1016,4 @@ const CourseViewer = ({ token, student: initialStudent, logout }) => {
 };
 
 export default CourseViewer;
+

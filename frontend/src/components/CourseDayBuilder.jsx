@@ -86,27 +86,27 @@ const CourseDayBuilder = ({ course }) => {
           ) : (
             <div className="space-y-6">
               {weeks.map((week, idx) => (
-                <div key={idx} className="bg-surface-container rounded-xl p-4 border border-outline-variant/30 shadow-sm">
-                  <h4 className="font-bold text-lg text-primary mb-4 border-b border-outline-variant/30 pb-2">{week}</h4>
-                  <div className="space-y-4">
-                    {days.filter(d => (d.week || 'Week 1') === week).map(day => (
-                      <DayEditor key={day._id} day={day} onRefresh={fetchDays} allWeeks={weeks} />
-                    ))}
-                    
-                    <NewDayForm course={course} week={week} defaultDayNum={nextDayNum} onRefresh={fetchDays} />
-                  </div>
-                </div>
+                <WeekSection 
+                  key={idx} 
+                  week={week} 
+                  days={days} 
+                  course={course} 
+                  nextDayNum={nextDayNum} 
+                  fetchDays={fetchDays} 
+                  weeks={weeks} 
+                />
               ))}
 
               {days.filter(d => !weeks.includes(d.week || 'Week 1')).length > 0 && (
-                <div className="bg-surface-container rounded-xl p-4 border border-outline-variant/30 opacity-80 shadow-sm">
-                  <h4 className="font-bold text-lg text-text-dim mb-4 border-b border-outline-variant/30 pb-2">Uncategorized / Legacy Days</h4>
-                  <div className="space-y-4">
-                    {days.filter(d => !weeks.includes(d.week || 'Week 1')).map(day => (
-                      <DayEditor key={day._id} day={day} onRefresh={fetchDays} allWeeks={weeks} />
-                    ))}
-                  </div>
-                </div>
+                <WeekSection 
+                  week="Uncategorized / Legacy Days" 
+                  days={days.filter(d => !weeks.includes(d.week || 'Week 1'))} 
+                  course={course} 
+                  nextDayNum={nextDayNum} 
+                  fetchDays={fetchDays} 
+                  weeks={weeks} 
+                  isLegacy={true}
+                />
               )}
               
               {/* Add New Week */}
@@ -123,6 +123,34 @@ const CourseDayBuilder = ({ course }) => {
               </form>
             </div>
           )}
+        </div>
+      )}
+    </div>
+  );
+};
+
+const WeekSection = ({ week, days, course, nextDayNum, fetchDays, weeks, isLegacy }) => {
+  const [isExpanded, setIsExpanded] = useState(false);
+
+  const displayDays = isLegacy ? days : days.filter(d => (d.week || 'Week 1') === week);
+
+  return (
+    <div className={`bg-surface-container rounded-xl border border-outline-variant/30 shadow-sm overflow-hidden ${isLegacy ? 'opacity-80' : ''}`}>
+      <div 
+        className="p-4 cursor-pointer hover:bg-surface-container-lowest transition-colors flex justify-between items-center bg-surface-container"
+        onClick={() => setIsExpanded(!isExpanded)}
+      >
+        <h4 className={`font-bold text-lg ${isLegacy ? 'text-text-dim' : 'text-primary'}`}>{week}</h4>
+        {isExpanded ? <ChevronUp size={20} className="text-text-dim" /> : <ChevronDown size={20} className="text-text-dim" />}
+      </div>
+      
+      {isExpanded && (
+        <div className="p-4 border-t border-outline-variant/30 space-y-4 bg-surface-container-lowest">
+          {displayDays.map(day => (
+            <DayEditor key={day._id} day={day} onRefresh={fetchDays} allWeeks={weeks} />
+          ))}
+          
+          {!isLegacy && <NewDayForm course={course} week={week} defaultDayNum={nextDayNum} onRefresh={fetchDays} />}
         </div>
       )}
     </div>
@@ -179,6 +207,7 @@ const NewDayForm = ({ course, week, defaultDayNum, onRefresh }) => {
 
 const DayEditor = ({ day, onRefresh }) => {
   const [items, setItems] = useState(day.items || []);
+  const [isExpanded, setIsExpanded] = useState(false);
   const [isAddingItem, setIsAddingItem] = useState(false);
   const [newItemType, setNewItemType] = useState('content');
   const [newItemContentForm, setNewItemContentForm] = useState({ title: '', contentType: 'text', body: '', videoUrl: '', imageUrl: '', formUrl: '', question: '', expectedAnswer: '', questions: [] });
@@ -323,9 +352,12 @@ const DayEditor = ({ day, onRefresh }) => {
 
   return (
     <div className={`bg-surface border border-outline-variant/30 rounded-xl overflow-hidden shadow-sm transition-opacity ${day.hidden ? 'opacity-60' : ''}`}>
-      <div className="bg-surface-container-highest px-4 py-3 flex justify-between items-center border-b border-outline-variant/30">
+      <div 
+        className="bg-surface-container-highest px-4 py-3 flex justify-between items-center border-b border-outline-variant/30 cursor-pointer hover:bg-surface-container transition-colors"
+        onClick={() => !isEditingDay && setIsExpanded(!isExpanded)}
+      >
         {isEditingDay ? (
-          <form onSubmit={handleEditDay} className="flex-1 flex gap-2 items-center mr-4">
+          <form onSubmit={handleEditDay} className="flex-1 flex gap-2 items-center mr-4" onClick={e => e.stopPropagation()}>
             <input type="number" value={editDayForm.dayNumber} onChange={e => setEditDayForm({...editDayForm, dayNumber: Number(e.target.value)})} className="w-16 p-1.5 rounded border border-outline-variant text-sm bg-surface" required min="1" placeholder="Day #" />
             <input type="text" value={editDayForm.title} onChange={e => setEditDayForm({...editDayForm, title: e.target.value})} className="flex-1 p-1.5 rounded border border-outline-variant text-sm bg-surface" required placeholder="Title" />
             <input type="text" value={editDayForm.description} onChange={e => setEditDayForm({...editDayForm, description: e.target.value})} className="flex-1 p-1.5 rounded border border-outline-variant text-sm bg-surface" placeholder="Description" />
@@ -333,17 +365,22 @@ const DayEditor = ({ day, onRefresh }) => {
             <button type="button" onClick={() => setIsEditingDay(false)} className="p-1.5 bg-surface-container text-text-dim rounded hover:text-text-primary border border-outline-variant"><X size={18} /></button>
           </form>
         ) : (
-          <div>
-            <h5 className="font-bold text-on-surface flex items-center gap-2">
-              Day {day.dayNumber}: {day.title}
-              {day.hidden && <span className="bg-outline-variant text-text-primary text-[10px] uppercase font-bold px-2 py-0.5 rounded-full">Hidden</span>}
-            </h5>
-            {day.description && <p className="text-xs text-text-dim mt-0.5">{day.description}</p>}
+          <div className="flex items-center gap-3">
+            <div className="shrink-0 text-text-dim">
+              {isExpanded ? <ChevronUp size={18} /> : <ChevronDown size={18} />}
+            </div>
+            <div>
+              <h5 className="font-bold text-on-surface flex items-center gap-2">
+                Day {day.dayNumber}: {day.title}
+                {day.hidden && <span className="bg-outline-variant text-text-primary text-[10px] uppercase font-bold px-2 py-0.5 rounded-full">Hidden</span>}
+              </h5>
+              {day.description && <p className="text-xs text-text-dim mt-0.5">{day.description}</p>}
+            </div>
           </div>
         )}
         
         {!isEditingDay && (
-          <div className="flex items-center gap-1 shrink-0">
+          <div className="flex items-center gap-1 shrink-0" onClick={e => e.stopPropagation()}>
             <button 
               onClick={() => setIsEditingDay(true)} 
               className="p-1.5 rounded-lg text-primary/70 hover:text-primary hover:bg-primary/10 transition-colors"
@@ -365,6 +402,7 @@ const DayEditor = ({ day, onRefresh }) => {
         )}
       </div>
       
+      {isExpanded && (
       <div className="p-4 bg-surface-container-lowest">
         {items.length === 0 ? (
           <p className="text-xs text-text-dim italic mb-4">No items in this day yet.</p>
@@ -540,6 +578,7 @@ const DayEditor = ({ day, onRefresh }) => {
           </button>
         )}
       </div>
+      )}
     </div>
   );
 };
