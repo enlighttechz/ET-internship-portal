@@ -433,8 +433,8 @@ const DayEditor = ({ day, onRefresh }) => {
                   </div>
                   {item.itemType === 'assessment' && (
                     <div className="mt-3 flex flex-col gap-1">
-                      <p className="text-xs font-bold text-accent">Google Form Assessment</p>
-                      <p className="text-[10px] text-text-dim truncate max-w-xs">{item.formUrl || 'No URL provided'}</p>
+                      <p className="text-xs font-bold text-accent">{item.questions && item.questions.length > 0 ? 'Native Assessment' : 'Google Form Assessment'}</p>
+                      <p className="text-[10px] text-text-dim truncate max-w-xs">{item.questions && item.questions.length > 0 ? `${item.questions.length} Question(s)` : (item.formUrl || 'No URL provided')}</p>
                     </div>
                   )}
                   {item.itemType === 'ai_qa' && (
@@ -505,48 +505,7 @@ const DayEditor = ({ day, onRefresh }) => {
             {newItemType === 'assessment' && (
               <div className="space-y-4">
                 <input type="text" placeholder="Assessment Title (e.g., Module 1 Quiz)" value={newItemContentForm.title} onChange={e => setNewItemContentForm({...newItemContentForm, title: e.target.value})} className="w-full p-2 rounded-md border text-sm font-bold" required />
-                <input type="text" placeholder="Google Form URL (Optional, overrides custom questions)" value={newItemContentForm.formUrl} onChange={e => setNewItemContentForm({...newItemContentForm, formUrl: e.target.value})} className="w-full p-2 rounded-md border text-sm" />
-                
-                <div className="bg-surface-container p-3 rounded-lg border border-outline-variant/30 space-y-3">
-                  <h6 className="font-bold text-sm text-text-primary">Questions ({newItemContentForm.questions.length})</h6>
-                  {newItemContentForm.questions.map((q, qIdx) => (
-                    <div key={qIdx} className="bg-surface p-3 rounded-md border border-outline-variant shadow-sm relative pr-10">
-                      <p className="text-sm font-bold"><span className="text-primary mr-1">Q{qIdx + 1}.</span> {q.questionText}</p>
-                      <span className="text-xs text-text-dim uppercase tracking-wider font-bold block mb-2">{q.type === 'mcq' ? 'Multiple Choice' : q.type === 'msq' ? 'Multiple Select' : 'Text Answer'}</span>
-                      
-                      {(q.type === 'mcq' || q.type === 'msq') && (
-                        <div className="grid grid-cols-2 gap-2 mt-2">
-                          {q.options.map((opt, oIdx) => (
-                            <div key={oIdx} className={`text-xs p-1.5 rounded border ${((q.type === 'mcq' && q.correctAnswerIndex === oIdx) || (q.type === 'msq' && q.correctAnswers.includes(oIdx))) ? 'bg-success/10 border-success/30 text-success font-bold' : 'bg-surface-container border-transparent'}`}>
-                              {opt}
-                            </div>
-                          ))}
-                        </div>
-                      )}
-                      {q.type === 'text_input' && (
-                        <div className="mt-2 text-xs text-success bg-success/10 p-2 rounded border border-success/20">
-                          <strong>Expected Answer:</strong> {q.expectedTextAnswer}
-                        </div>
-                      )}
-                      
-                      <button type="button" onClick={() => {
-                        const newQs = [...newItemContentForm.questions];
-                        newQs.splice(qIdx, 1);
-                        setNewItemContentForm({...newItemContentForm, questions: newQs});
-                      }} className="absolute top-3 right-3 text-error/70 hover:text-error bg-error/10 hover:bg-error/20 p-1.5 rounded-md transition-colors">
-                        <Trash2 size={14} />
-                      </button>
-                    </div>
-                  ))}
-
-                  {/* Add New Question Form Inline */}
-                  <div className="bg-surface-container-highest p-3 rounded-md border border-outline-variant border-dashed">
-                    <p className="text-xs font-bold uppercase tracking-wider text-text-dim mb-2 flex items-center gap-1"><Plus size={14}/> Add Question</p>
-                    <AssessmentQuestionBuilder onAdd={(newQ) => {
-                      setNewItemContentForm({...newItemContentForm, questions: [...newItemContentForm.questions, newQ]});
-                    }} />
-                  </div>
-                </div>
+                <input type="url" placeholder="Google Form URL" value={newItemContentForm.formUrl} onChange={e => setNewItemContentForm({...newItemContentForm, formUrl: e.target.value})} className="w-full p-2 rounded-md border text-sm" required />
               </div>
             )}
 
@@ -569,7 +528,7 @@ const DayEditor = ({ day, onRefresh }) => {
           <button 
             onClick={() => {
               setEditingItemIdx(null);
-              setNewItemContentForm({ title: '', contentType: 'text', body: '', videoUrl: '', imageUrl: '', formUrl: '', question: '', expectedAnswer: '' });
+              setNewItemContentForm({ title: '', contentType: 'text', body: '', videoUrl: '', imageUrl: '', formUrl: '', question: '', expectedAnswer: '', questions: [] });
               setNewItemType('content');
               setIsAddingItem(true);
             }}

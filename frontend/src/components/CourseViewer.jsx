@@ -859,7 +859,7 @@ const CourseViewer = ({ token, student: initialStudent, logout }) => {
 
                           {/* Content Body */}
                           {currentItem.itemType === 'content' ? (
-                            <div id="course-content-area" className={`prose prose-sm md:prose-base lg:prose-lg max-w-full w-full break-words overflow-hidden prose-headings:text-gray-900 prose-a:text-blue-600 ${showTutorial && tutorialStep === 3 ? 'relative z-[70] bg-white p-6 rounded-xl ring-4 ring-[#1a1a2e] shadow-2xl' : ''}`}>
+                            <div id="course-content-area" className={`prose prose-sm sm:prose-base max-w-full w-full break-words overflow-hidden prose-headings:text-gray-900 prose-a:text-blue-600 ${showTutorial && tutorialStep === 3 ? 'relative z-[70] bg-white p-6 rounded-xl ring-4 ring-[#1a1a2e] shadow-2xl' : ''}`}>
                               {currentItem.contentType === 'video' ? null : currentItem.contentType === 'image' ? (
                                 <ImageCarousel images={currentItem.imageUrl?.split(',').map(url => url.trim()).filter(Boolean)} title={currentItem.title} />
                               ) : (
