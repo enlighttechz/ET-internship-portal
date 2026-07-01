@@ -589,6 +589,10 @@ const StudentDashboard = ({ token, student, setStudent, logout }) => {
                 <input type="email" value={student?.email || ''} disabled className="w-full px-4 py-2 bg-surface-container-highest/30 text-text-primary rounded-xl border border-outline-variant/30 cursor-not-allowed outline-none" />
               </div>
               <div>
+                <label className="block text-xs font-bold text-text-dim mb-1">Student ID</label>
+                <input type="text" value={student?.internId || ''} disabled className="w-full px-4 py-2 bg-surface-container-highest/30 text-text-primary rounded-xl border border-outline-variant/30 cursor-not-allowed outline-none" />
+              </div>
+              <div>
                 <label className="block text-xs font-bold text-text-dim mb-1">Contact Number</label>
                 <input type="text" value={profileData.contact} onChange={e => setProfileData({...profileData, contact: e.target.value})} className="w-full px-4 py-2 bg-surface-container rounded-xl border border-outline-variant/30 focus:border-primary focus:ring-1 focus:ring-primary outline-none" required />
               </div>

@@ -194,6 +194,7 @@ const CourseViewer = ({ token, student: initialStudent, logout }) => {
   // Navigation state
   const [activeDayIndex, setActiveDayIndex] = useState(0);
   const [activeItemIndex, setActiveItemIndex] = useState(0);
+  const [highestVisitedItemIndex, setHighestVisitedItemIndex] = useState(0);
   const [studentAnswer, setStudentAnswer] = useState('');
   const [aiEvaluation, setAiEvaluation] = useState(null);
   const [isEvaluating, setIsEvaluating] = useState(false);
@@ -206,6 +207,7 @@ const CourseViewer = ({ token, student: initialStudent, logout }) => {
     setStudentAnswer('');
     setAiEvaluation(null);
     setIsEvaluating(false);
+    setHighestVisitedItemIndex(prev => Math.max(prev, activeItemIndex));
     setTimeout(() => {
       if (contentAreaRef.current && trackerRef.current) {
         contentAreaRef.current.scrollTo({
@@ -216,7 +218,11 @@ const CourseViewer = ({ token, student: initialStudent, logout }) => {
         contentAreaRef.current.scrollTo({ top: 0, behavior: 'smooth' });
       }
     }, 50);
-  }, [activeItemIndex, activeDayIndex]);
+  }, [activeItemIndex]);
+
+  useEffect(() => {
+    setHighestVisitedItemIndex(0);
+  }, [activeDayIndex]);
   
   const [sidebarOpen, setSidebarOpen] = useState(window.innerWidth > 768);
   const [sidebarMinimized, setSidebarMinimized] = useState(false);
@@ -570,14 +576,7 @@ const CourseViewer = ({ token, student: initialStudent, logout }) => {
           <span className="hidden md:inline text-sm text-gray-600 font-medium truncate max-w-[300px]">Learn</span>
         </div>
         <div className="flex items-center gap-3">
-          <button 
-            id="btn-bgm"
-            onClick={() => setBgmPlaying(!bgmPlaying)}
-            className={`p-2 rounded-lg transition-colors ${bgmPlaying ? 'bg-blue-50 text-blue-600' : 'text-gray-500 hover:text-gray-900 hover:bg-gray-100'} ${showTutorial && tutorialStep === 1 ? 'relative z-[70] ring-4 ring-blue-500 bg-white shadow-2xl scale-125' : ''}`}
-            title="Study Music"
-          >
-            <Music size={18} />
-          </button>
+
           <button onClick={() => setRecommendationInboxOpen(true)} className="p-2 rounded-lg text-gray-500 hover:text-gray-900 hover:bg-gray-100 transition-colors relative">
             <Inbox size={18} />
             {unreadCount > 0 && <span className="absolute -top-1 -right-1 bg-red-500 text-white text-[9px] w-4 h-4 rounded-full flex items-center justify-center">{unreadCount}</span>}
@@ -601,7 +600,7 @@ const CourseViewer = ({ token, student: initialStudent, logout }) => {
         <div className="fixed inset-0 z-[60] lg:hidden">
           <div className="absolute inset-0 bg-black/50" onClick={() => setSidebarOpen(false)} />
           <div className="absolute left-0 top-0 bottom-0 w-72 bg-white shadow-2xl flex flex-col animate-slide-up overflow-hidden">
-            <div className="p-4 border-b border-gray-200 flex items-center justify-between bg-[#1a1a2e] text-white">
+            <div className="p-4 border-b border-gray-200 flex items-center justify-between bg-[#0052a3] text-white">
               <div className="flex items-center gap-2">
                 <img src={ETLogo} alt="Logo" className="w-7 h-7" />
                 <span className="font-bold">Course Menu</span>
@@ -612,21 +611,32 @@ const CourseViewer = ({ token, student: initialStudent, logout }) => {
               {(courseDetails?.weeks?.length > 0 ? courseDetails.weeks : ['Week 1']).map((week, wIdx) => {
                 const daysInWeek = courseDays.filter(d => (d.week || 'Week 1') === week);
                 if (daysInWeek.length === 0) return null;
+                
+                let isPrevWeekIncomplete = false;
+                for (let i = 0; i < wIdx; i++) {
+                  const prevWeek = (courseDetails?.weeks?.length > 0 ? courseDetails.weeks : ['Week 1'])[i];
+                  const prevWeekDays = courseDays.filter(d => (d.week || 'Week 1') === prevWeek);
+                  if (prevWeekDays.some(d => d.dayNumber >= (courseData?.learningProgress || 1))) {
+                    isPrevWeekIncomplete = true;
+                    break;
+                  }
+                }
+
                 return (
                   <div key={`mob-week-${wIdx}`} className="mb-3">
-                    <h5 className="text-[10px] uppercase tracking-wider font-bold text-[#1a1a2e]/60 mb-2 px-2">{week}</h5>
+                    <h5 className="text-[10px] uppercase tracking-wider font-bold text-[#0052a3]/80 mb-2 px-2">{week}</h5>
                     {daysInWeek.map(day => {
                       const idx = courseDays.findIndex(d => d._id === day._id);
                       const isFutureDay = day.dayNumber > (courseData?.learningProgress || 1);
                       const isNextDayLockedByTime = isLockedByTime && day.dayNumber === (courseData?.learningProgress || 1);
-                      const isLocked = isFutureDay || isNextDayLockedByTime;
+                      const isLocked = isPrevWeekIncomplete || isFutureDay || isNextDayLockedByTime;
                       const isCompleted = day.dayNumber < (courseData?.learningProgress || 1);
                       const isActive = activeDayIndex === idx;
                       return (
                         <button key={day._id} onClick={() => { if (!isLocked) { setActiveDayIndex(idx); setActiveItemIndex(0); setSidebarOpen(false); }}} disabled={isLocked}
-                          className={`w-full flex items-center gap-3 text-left px-3 py-2.5 rounded-lg mb-1 text-sm transition-all ${isActive ? 'bg-[#1a1a2e] text-white' : isLocked ? 'opacity-40 cursor-not-allowed' : 'hover:bg-gray-100'}`}>
-                          {isLocked ? <Lock size={14} className="shrink-0 text-gray-400" /> : isCompleted ? <CheckCircle size={14} className="shrink-0 text-green-500" /> : <PlayCircle size={14} className="shrink-0 text-[#1a1a2e]" />}
-                          <div className="min-w-0"><span className="font-semibold block">Day {day.dayNumber}</span><span className="text-xs text-gray-500 truncate block">{day.title}</span></div>
+                          className={`w-full flex items-center gap-3 text-left px-3 py-2.5 rounded-lg mb-1 text-sm transition-all ${isActive ? 'bg-[#0052a3] text-white shadow-sm' : isLocked ? 'opacity-40 cursor-not-allowed' : 'hover:bg-gray-100 text-gray-700'}`}>
+                          {isLocked ? <Lock size={16} className={`shrink-0 ${isActive ? 'text-white/80' : 'text-gray-400'}`} /> : isCompleted ? <CheckCircle size={16} className="shrink-0 text-green-500" /> : <PlayCircle size={16} className={`shrink-0 ${isActive ? 'text-white' : 'text-[#0052a3]'}`} />}
+                          <div className="min-w-0"><span className="font-semibold block">Day {day.dayNumber}</span><span className={`text-xs truncate block ${isActive ? 'text-blue-100' : 'text-gray-500'}`}>{day.title}</span></div>
                         </button>
                       );
                     })}
@@ -642,11 +652,7 @@ const CourseViewer = ({ token, student: initialStudent, logout }) => {
         <audio ref={audioRef} src={studyMusic} loop autoPlay={bgmPlaying} />
 
         {/* Banners */}
-        {timeRemaining && !isCourseShuttered && (
-          <div className="bg-blue-50 text-[#1a1a2e] px-4 py-2.5 text-center text-sm font-semibold flex items-center justify-center gap-2 border-b border-blue-200">
-            <Clock size={16} /> Next day unlocks in {timeRemaining}.
-          </div>
-        )}
+        {/* Banners */}
         {!isCourseShuttered && currentDay && courseData?.learningProgress > currentDay.dayNumber && (
           <div className="bg-green-600 text-white px-4 py-2 text-center text-sm font-semibold flex items-center justify-center gap-2">
             <CheckCircle size={16} /> Review mode.
@@ -689,6 +695,17 @@ const CourseViewer = ({ token, student: initialStudent, logout }) => {
                     const daysInWeek = courseDays.filter(d => (d.week || 'Week 1') === week);
                     if (daysInWeek.length === 0) return null;
                     const completedInWeek = daysInWeek.filter(d => d.dayNumber < (courseData?.learningProgress || 1)).length;
+                    
+                    let isPrevWeekIncomplete = false;
+                    for (let i = 0; i < wIdx; i++) {
+                      const prevWeek = (courseDetails?.weeks?.length > 0 ? courseDetails.weeks : ['Week 1'])[i];
+                      const prevWeekDays = courseDays.filter(d => (d.week || 'Week 1') === prevWeek);
+                      if (prevWeekDays.some(d => d.dayNumber >= (courseData?.learningProgress || 1))) {
+                        isPrevWeekIncomplete = true;
+                        break;
+                      }
+                    }
+
                     const totalInWeek = daysInWeek.length;
                     const weekProgress = totalInWeek > 0 ? Math.round((completedInWeek / totalInWeek) * 100) : 0;
                     return (
@@ -703,7 +720,8 @@ const CourseViewer = ({ token, student: initialStudent, logout }) => {
                             const isCompleted = day.dayNumber < (courseData?.learningProgress || 1);
                             const isActive = activeDayIndex === idx;
                             const isFutureDay = day.dayNumber > (courseData?.learningProgress || 1);
-                            const isLocked = isFutureDay || (isLockedByTime && day.dayNumber === (courseData?.learningProgress || 1));
+                            const isNextDayLockedByTime = isLockedByTime && day.dayNumber === (courseData?.learningProgress || 1);
+                            const isLocked = isPrevWeekIncomplete || isFutureDay || isNextDayLockedByTime;
                             return (
                               <button key={day._id}
                                 onClick={() => { if (!isLocked) { setActiveDayIndex(idx); setActiveItemIndex(0); }}}
@@ -751,36 +769,101 @@ const CourseViewer = ({ token, student: initialStudent, logout }) => {
                         </div>
                       ) : currentItem ? (
                         <>
-                          {/* Item Title + TTS */}
-                          <div className="flex flex-col md:flex-row md:items-start justify-between gap-3 mb-6">
-                            <div className="flex items-center gap-3">
-                              <span className="bg-gray-100 text-gray-500 w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold shrink-0">{activeItemIndex + 1}</span>
-                              <h3 className="text-2xl md:text-3xl lg:text-4xl font-bold text-gray-900">{currentItem.title}</h3>
-                            </div>
-                            {currentItem.itemType === 'content' && currentItem.contentType !== 'video' && ttsManager.isSupported && (
-                              <div className="flex items-center bg-gray-50 px-3 py-2 rounded-lg border border-gray-200 shrink-0">
-                                <button id="btn-tts" onClick={handleTtsPlay}
-                                  className={`p-2 rounded-lg transition-colors shrink-0 ${isListening ? 'bg-[#1a1a2e] text-white' : 'bg-white hover:bg-gray-100 text-[#1a1a2e] border border-gray-200'} ${showTutorial && tutorialStep === 2 ? 'relative z-[70] ring-4 ring-[#1a1a2e] shadow-2xl scale-125' : ''}`}
-                                  title={isListening ? 'Stop' : 'Listen'}>
-                                  {isListening ? <VolumeX size={18} /> : <Volume2 size={18} />}
+                          {/* Day Tracker & Title */}
+                          <div className="w-full mb-10">
+                            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-10">
+                              <div className="flex items-center gap-4 flex-wrap">
+                                <div className="bg-[#0052a3] text-white px-5 py-2 rounded-full font-bold text-lg whitespace-nowrap shadow-sm">
+                                  Day {currentDay?.dayNumber}
+                                </div>
+                                {timeRemaining && !isCourseShuttered && (
+                                  <div className="bg-blue-50 text-[#0052a3] px-3 py-1 rounded-full text-sm font-semibold flex items-center gap-2 border border-blue-200 shadow-sm">
+                                    <Clock size={16} /> Next day unlocks in {timeRemaining}
+                                  </div>
+                                )}
+                                <h2 className="text-2xl md:text-4xl font-extrabold text-[#111827] w-full mt-2">
+                                  {currentDay?.title}
+                                </h2>
+                              </div>
+                              
+                              {/* TTS Player & Music */}
+                              <div className="flex items-center gap-3 self-start md:self-auto shrink-0">
+                                {currentItem.itemType === 'content' && currentItem.contentType !== 'video' && ttsManager.isSupported && (
+                                  <div className="flex items-center bg-gray-50 px-3 py-2 rounded-lg border border-gray-200 shrink-0">
+                                    <button id="btn-tts" onClick={handleTtsPlay}
+                                      className={`p-2 rounded-lg transition-colors shrink-0 flex items-center gap-2 font-bold text-sm ${isListening ? 'bg-[#1a1a2e] text-white' : 'bg-white hover:bg-gray-100 text-[#1a1a2e] border border-gray-200'} ${showTutorial && tutorialStep === 2 ? 'relative z-[70] ring-4 ring-[#1a1a2e] shadow-2xl scale-125' : ''}`}
+                                      title={isListening ? 'Stop' : 'Listen'}>
+                                      {isListening ? <VolumeX size={18} /> : <><Bot size={18} /> <span className="hidden sm:inline">AI</span></>}
+                                    </button>
+                                    <div className={`flex items-center overflow-hidden transition-all duration-500 ${isListening ? 'max-w-[400px] opacity-100 ml-3 gap-2' : 'max-w-0 opacity-0 ml-0 gap-0'}`}>
+                                      <button onClick={handleTtsPause} className={`p-1.5 rounded-lg transition-colors shrink-0 ${isPaused ? 'bg-[#1a1a2e] text-white' : 'bg-white hover:bg-gray-100 text-gray-600 border border-gray-200'}`}>{isPaused ? <Play size={14} fill="currentColor" /> : <Pause size={14} />}</button>
+                                      <button onClick={handleTtsStop} className="p-1.5 rounded-lg bg-white hover:bg-red-50 text-gray-500 border border-gray-200 shrink-0"><Square size={12} fill="currentColor" /></button>
+                                      <input type="range" min="0.5" max="2" step="0.1" value={ttsRate} onChange={(e) => setTtsRate(parseFloat(e.target.value))} className="w-16 shrink-0 accent-[#1a1a2e]" />
+                                      <span className="text-xs text-gray-500 font-semibold shrink-0">{ttsRate.toFixed(1)}x</span>
+                                    </div>
+                                  </div>
+                                )}
+                                
+                                <button 
+                                  id="btn-bgm"
+                                  onClick={() => setBgmPlaying(!bgmPlaying)}
+                                  className={`p-2.5 rounded-lg border transition-colors shrink-0 ${bgmPlaying ? 'bg-blue-50 text-blue-600 border-blue-200' : 'bg-gray-50 text-gray-500 border-gray-200 hover:text-gray-900 hover:bg-gray-100'} ${showTutorial && tutorialStep === 1 ? 'relative z-[70] ring-4 ring-blue-500 bg-white shadow-2xl scale-125' : ''}`}
+                                  title="Study Music"
+                                >
+                                  <Music size={20} />
                                 </button>
-                                <div className={`flex items-center overflow-hidden transition-all duration-500 ${isListening ? 'max-w-[400px] opacity-100 ml-3 gap-2' : 'max-w-0 opacity-0 ml-0 gap-0'}`}>
-                                  <button onClick={handleTtsPause} className={`p-1.5 rounded-lg transition-colors shrink-0 ${isPaused ? 'bg-[#1a1a2e] text-white' : 'bg-white hover:bg-gray-100 text-gray-600 border border-gray-200'}`}>{isPaused ? <Play size={14} fill="currentColor" /> : <Pause size={14} />}</button>
-                                  <button onClick={handleTtsStop} className="p-1.5 rounded-lg bg-white hover:bg-red-50 text-gray-500 border border-gray-200 shrink-0"><Square size={12} fill="currentColor" /></button>
-                                  <input type="range" min="0.5" max="2" step="0.1" value={ttsRate} onChange={(e) => setTtsRate(parseFloat(e.target.value))} className="w-16 shrink-0 accent-[#1a1a2e]" />
-                                  <span className="text-xs text-gray-500 font-semibold shrink-0">{ttsRate.toFixed(1)}x</span>
+                              </div>
+                            </div>
+
+                            {/* Horizontal Progress Tracker */}
+                            <div className="relative w-full overflow-x-auto pb-4 pt-2 -mx-4 px-4 md:mx-0 md:px-0 no-scrollbar">
+                              <div className="min-w-[400px] relative w-full flex justify-between">
+                                {/* Background Line */}
+                                <div className="absolute left-0 right-0 h-1 bg-[#0052a3] top-1/2 -translate-y-1/2 z-0"></div>
+                                
+                                {/* Nodes Container */}
+                                <div className="relative z-10 w-full flex items-center justify-between">
+                                  {currentDay?.items?.map((item, idx) => {
+                                    const isActive = idx === activeItemIndex;
+                                    const isCurrentDayCompleted = currentDay.dayNumber < (courseData?.learningProgress || 1);
+                                    const isAccessible = isCurrentDayCompleted || idx <= highestVisitedItemIndex;
+                                    return (
+                                      <button 
+                                        key={idx}
+                                        onClick={() => {
+                                          if (isAccessible) {
+                                            setActiveItemIndex(idx);
+                                          }
+                                        }}
+                                        disabled={!isAccessible}
+                                        className={`shrink-0 w-10 h-10 md:w-12 md:h-12 rounded-full flex items-center justify-center border-[4px] border-white shadow-sm transition-transform duration-300 ${isAccessible ? 'cursor-pointer' : 'cursor-not-allowed opacity-50 grayscale'}
+                                          ${isActive ? 'bg-[#0052a3] scale-[1.15]' : isAccessible ? 'bg-[#0052a3] hover:scale-110' : 'bg-gray-400'}`}
+                                        title={isAccessible ? item.title : "Complete previous sections to unlock"}
+                                      >
+                                        {item.itemType === 'content' && item.contentType === 'video' ? (
+                                          <Video size={isActive ? 20 : 18} className="text-white" />
+                                        ) : item.itemType === 'content' ? (
+                                          <FileText size={isActive ? 20 : 18} className="text-white" />
+                                        ) : item.itemType === 'assessment' ? (
+                                          <Award size={isActive ? 20 : 18} className="text-white" />
+                                        ) : (
+                                          <Bot size={isActive ? 20 : 18} className="text-white" />
+                                        )}
+                                      </button>
+                                    );
+                                  })}
                                 </div>
                               </div>
-                            )}
+                            </div>
                           </div>
 
                           {/* Content Body */}
                           {currentItem.itemType === 'content' ? (
-                            <div id="course-content-area" className={`prose prose-base md:prose-lg lg:prose-xl max-w-none prose-headings:text-gray-900 prose-a:text-blue-600 ${showTutorial && tutorialStep === 3 ? 'relative z-[70] bg-white p-6 rounded-xl ring-4 ring-[#1a1a2e] shadow-2xl' : ''}`}>
+                            <div id="course-content-area" className={`prose prose-sm md:prose-base lg:prose-lg max-w-full w-full break-words overflow-hidden prose-headings:text-gray-900 prose-a:text-blue-600 ${showTutorial && tutorialStep === 3 ? 'relative z-[70] bg-white p-6 rounded-xl ring-4 ring-[#1a1a2e] shadow-2xl' : ''}`}>
                               {currentItem.contentType === 'video' ? null : currentItem.contentType === 'image' ? (
                                 <ImageCarousel images={currentItem.imageUrl?.split(',').map(url => url.trim()).filter(Boolean)} title={currentItem.title} />
                               ) : (
-                                <div className="bg-white rounded-xl p-6 md:p-8 border border-gray-200 shadow-sm" dangerouslySetInnerHTML={{ __html: currentItem.body?.replace(/<img /g, '<img loading="lazy" style="max-width: 100%; height: auto;" ') }} />
+                                <div className="bg-white rounded-xl p-4 sm:p-6 md:p-8 border border-gray-200 shadow-sm w-full overflow-x-auto" dangerouslySetInnerHTML={{ __html: currentItem.body?.replace(/<img /g, '<img loading="lazy" style="max-width: 100%; height: auto;" ') }} />
                               )}
                             </div>
                           ) : currentItem.itemType === 'assessment' ? (
@@ -805,8 +888,19 @@ const CourseViewer = ({ token, student: initialStudent, logout }) => {
                                   )
                                 ) : currentItem.formUrl ? (
                                   <>
-                                    <div className="w-full rounded-xl overflow-hidden border border-gray-200 mb-6 h-[500px] bg-white">
-                                      <iframe src={currentItem.formUrl} width="100%" height="100%" frameBorder="0"></iframe>
+                                    <div className="w-full rounded-xl overflow-hidden border border-gray-200 mb-6 h-[600px] bg-white relative">
+                                      <iframe 
+                                        src={currentItem.formUrl.includes('docs.google.com/forms') ? `${currentItem.formUrl.split('?')[0]}?embedded=true` : currentItem.formUrl} 
+                                        width="100%" 
+                                        height="100%" 
+                                        frameBorder="0"
+                                        marginHeight="0"
+                                        marginWidth="0"
+                                        title="Assessment Form"
+                                        className="absolute inset-0"
+                                      >
+                                        Loading...
+                                      </iframe>
                                     </div>
                                     <div className="text-center">
                                       <button disabled={submittedAssessments[currentItem._id]} onClick={handleSubmitAssessment}
@@ -859,8 +953,8 @@ const CourseViewer = ({ token, student: initialStudent, logout }) => {
                               className="flex items-center gap-2 px-6 py-3 rounded text-blue-600 font-semibold hover:bg-blue-50 hover:underline transition-all disabled:opacity-40 disabled:hover:no-underline disabled:hover:bg-transparent">
                               <ChevronLeft size={20} /> <span className="hidden sm:inline">Previous</span>
                             </button>
-                            <button id="btn-next" onClick={handleNext} disabled={isLockedByTime}
-                              className={`flex items-center gap-2 px-8 py-3 rounded text-white font-semibold transition-all shadow-sm ${isLockedByTime ? 'bg-gray-300 text-gray-500 cursor-not-allowed' : 'bg-blue-600 hover:bg-blue-700 hover:shadow-md'} ${showTutorial && tutorialStep === 4 ? 'relative z-[70] ring-4 ring-blue-500 shadow-2xl scale-110' : ''}`}>
+                            <button id="btn-next" onClick={handleNext} disabled={isLockedByTime || (currentItem.itemType === 'assessment' && !submittedAssessments[currentItem._id])}
+                              className={`flex items-center gap-2 px-8 py-3 rounded text-white font-semibold transition-all shadow-sm ${isLockedByTime || (currentItem.itemType === 'assessment' && !submittedAssessments[currentItem._id]) ? 'bg-gray-300 text-gray-500 cursor-not-allowed' : 'bg-blue-600 hover:bg-blue-700 hover:shadow-md'} ${showTutorial && tutorialStep === 4 ? 'relative z-[70] ring-4 ring-blue-500 shadow-2xl scale-110' : ''}`}>
                               {activeItemIndex === currentDay.items.length - 1 ? 'Finish Day' : 'Next'} <ChevronRight size={20} />
                             </button>
                           </div>
